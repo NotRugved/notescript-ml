@@ -25,17 +25,25 @@ st.set_page_config(
     layout="wide",
 )
 
-# Optional theme or intro styling if present
+# Load Miles Morales theme CSS
 if os.path.exists("ui/theme.css"):
     with open("ui/theme.css", "r", encoding="utf-8") as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-if os.path.exists("ui/intro.html"):
-    with open("ui/intro.html", "r", encoding="utf-8") as f:
-        st.markdown(f.read(), unsafe_allow_html=True)
-else:
-    st.title("🎓 NoteScript ML")
-    st.caption("CampusX '100 Days of Machine Learning' AI Study Notes Generator")
+# Show spider-web intro animation only once per session
+if not st.session_state.get("intro_shown", False):
+    if os.path.exists("ui/intro.html"):
+        with open("ui/intro.html", "r", encoding="utf-8") as f:
+            st.markdown(f.read(), unsafe_allow_html=True)
+    st.session_state["intro_shown"] = True
+
+# App header block
+st.markdown("""
+<div class="ns-header">
+  <span class="ns-title">NOTESCRIPT ML</span>
+  <span class="ns-tagline">CampusX 100 Days of ML, notes that actually stick.</span>
+</div>
+""", unsafe_allow_html=True)
 
 
 # Initialize session state keys
