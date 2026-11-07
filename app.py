@@ -39,12 +39,11 @@ if not st.session_state.get("intro_shown", False):
 
 # App header block
 st.markdown("""
-    <div class="main-header">
-        <h1 class="main-title">⚡ NoteScript ML</h1>
-        <p class="sub-title">CampusX 100 Days of ML — Concise, automated notes & code breakdown</p>
+    <div class="ns-header">
+        <div class="ns-title">NOTESCRIPT ML</div>
+        <div class="ns-tagline">CampusX 100 Days of ML — notes that actually stick.</div>
     </div>
 """, unsafe_allow_html=True)
-
 
 # Initialize session state keys
 if "pipeline_result" not in st.session_state:

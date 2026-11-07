@@ -121,3 +121,4 @@ Open your browser at `http://localhost:8501`.
 - **Video Metadata & Ingestion**: `yt-dlp`
 - **Database**: SQLite (`notescript.db`) with plain parameterized SQL
 - **Styling**: Custom Neo-Brutalist CSS (`ui/theme.css`, `ui/intro.html`) with Google Fonts Space Mono & DM Sans
+
