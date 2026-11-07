@@ -283,3 +283,92 @@ def set_cache(
         connection.commit()
     finally:
         connection.close()
+
+
+def get_cached_playlist(
+    playlist_url: str,
+    max_age_hours: float = 24.0,
+    db_path: str = "notescript.db",
+) -> list[dict] | None:
+    """Retrieve cached playlist items if they exist and are younger than max_age_hours."""
+    connection = sqlite3.connect(db_path)
+    try:
+        cursor = connection.cursor()
+        cursor.execute(
+            """
+            SELECT position, video_id, title, fetched_at
+            FROM playlist
+            WHERE playlist_url = ?
+            ORDER BY position ASC
+            """,
+            (playlist_url,),
+        )
+        rows = cursor.fetchall()
+        if len(rows) == 0:
+            return None
+
+        # Check age using the first row's fetched_at timestamp
+        first_row = rows[0]
+        fetched_at_str = first_row[3]
+
+        try:
+            fetched_time_struct = time.strptime(fetched_at_str, "%Y-%m-%d %H:%M:%S")
+            fetched_epoch = time.mktime(fetched_time_struct)
+        except ValueError:
+            cleaned_str = fetched_at_str.replace("T", " ").replace("Z", "")
+            if "." in cleaned_str:
+                cleaned_parts = cleaned_str.split(".")
+                cleaned_str = cleaned_parts[0]
+            fetched_time_struct = time.strptime(cleaned_str, "%Y-%m-%d %H:%M:%S")
+            fetched_epoch = time.mktime(fetched_time_struct)
+
+        current_epoch = time.time()
+        age_hours = (current_epoch - fetched_epoch) / 3600.0
+
+        if age_hours > max_age_hours:
+            return None
+
+        result = []
+        # Explicit loop to unpack rows into dicts without list comprehensions
+        for row in rows:
+            item = {
+                "position": row[0],
+                "video_id": row[1],
+                "title": row[2],
+            }
+            result.append(item)
+        return result
+    finally:
+        connection.close()
+
+
+def save_cached_playlist(
+    playlist_url: str,
+    items: list[dict],
+    db_path: str = "notescript.db",
+) -> None:
+    """Save playlist items to database with current timestamp."""
+    fetched_at = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    connection = sqlite3.connect(db_path)
+    try:
+        cursor = connection.cursor()
+        # Clear existing rows for this playlist before inserting refreshed items
+        cursor.execute("DELETE FROM playlist WHERE playlist_url = ?", (playlist_url,))
+        for item in items:
+            cursor.execute(
+                """
+                INSERT INTO playlist (playlist_url, video_id, title, position, fetched_at)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (
+                    playlist_url,
+                    item.get("video_id", ""),
+                    item.get("title", ""),
+                    item.get("position", 0),
+                    fetched_at,
+                ),
+            )
+        connection.commit()
+    finally:
+        connection.close()
+
