@@ -24,14 +24,23 @@ Language: Hinglish in Roman script. Hindi sentence flow with English technical t
 
 Rules:
 - Stay faithful to the video. Do not add topics the teacher did not cover. If audio or screen is unclear, write 'unclear in video'. Never invent teacher statements.
-- theory_sections: cover every concept in order. For each: what it is, why it is needed, step-by-step working, and the math with the meaning of every symbol. Use markdown. Be thorough.
+- theory_sections: cover every concept in order. For each: heading, timestamp, and content (detailed markdown containing what it is, why it is needed, step-by-step working, and the math with meaning of every symbol). Be thorough.
 - intuition: the teacher's plain-language 'samajh' of the concept, separate from theory.
 - code_blocks: complete, runnable snippets. If OFFICIAL NOTEBOOK text is provided and the teacher's code matches it, copy from the notebook exactly and label 'official'. Code seen on screen but not in the notebook is 'on-screen'. Code only described aloud is 'reconstructed' and must stay minimal. Add a Hinglish explanation line by line where useful.
 - analogies: ONLY real-life examples, stories or analogies the teacher actually used, with the timestamp. Explain what each analogy is teaching.
 - common_mistakes: pitfalls the teacher mentioned (source 'teacher') and clearly standard ones for this topic (source 'added'). Include why it happens and the fix.
 - formulas and key_terms: collect them with short Hinglish meanings.
 - Timestamps are ABSOLUTE video time in MM:SS (or H:MM:SS), not relative to this segment.
-- Output ONLY valid JSON matching the schema. No markdown fences, no commentary."""
+- Output ONLY valid JSON matching this schema:
+{
+  "theory_sections": [{"heading": "...", "timestamp": "MM:SS", "content": "..."}],
+  "intuition": [{"timestamp": "MM:SS", "text": "..."}],
+  "code_blocks": [{"title": "...", "label": "official/on-screen/reconstructed", "timestamp": "MM:SS", "explanation": "...", "code": "..."}],
+  "analogies": [{"timestamp": "MM:SS", "analogy": "...", "explains": "..."}],
+  "common_mistakes": [{"mistake": "...", "why": "...", "fix": "...", "timestamp": "MM:SS", "source": "teacher/added"}],
+  "formulas": [{"name": "...", "formula": "...", "meaning": "..."}],
+  "key_terms": [{"term": "...", "meaning": "..."}]
+}"""
 
 SYSTEM_INSTRUCTION_REVISION = """You are an expert machine learning educator creating a quick revision pack from a lecture's merged notes.
 Produce concise, highly memorable study material in Hinglish (Roman script, technical terms in English).
@@ -112,7 +121,7 @@ def call_with_retry(payload: dict) -> str:
 
             lower_body = error_body.lower()
             # Check for daily quota exhaustion
-            if "quota" in lower_body and ("daily" in lower_body or "per_day" in lower_body or "resource_exhausted" in lower_body):
+            if "quota" in lower_body and ("daily" in lower_body or "per_day" in lower_body or "perday" in lower_body or "free_tier_requests" in lower_body):
                 if error_status == 429:
                     raise QuotaExhaustedError("Gemini API daily quota exhausted. Please resume tomorrow.")
 
@@ -172,6 +181,14 @@ def _parse_or_retry_json(payload: dict) -> dict:
 
 def fix_timestamps(data: dict, start_seconds: int, end_seconds: int) -> dict:
     """Adjust out-of-range timestamps and ensure required segment list keys exist."""
+    if isinstance(data, list):
+        if len(data) > 0 and isinstance(data[0], dict):
+            data = data[0]
+        else:
+            data = {}
+    elif not isinstance(data, dict):
+        data = {}
+
     required_list_keys = [
         "theory_sections",
         "intuition",
@@ -185,6 +202,48 @@ def fix_timestamps(data: dict, start_seconds: int, end_seconds: int) -> dict:
     for list_key in required_list_keys:
         if list_key not in data or not isinstance(data[list_key], list):
             data[list_key] = []
+
+    # Normalize theory_sections
+    for item in data.get("theory_sections", []):
+        if not isinstance(item, dict):
+            continue
+        if "heading" not in item or not item["heading"]:
+            if "title" in item and item["title"]:
+                item["heading"] = item["title"]
+            elif "concept" in item and item["concept"]:
+                item["heading"] = item["concept"]
+            else:
+                item["heading"] = "Core Concept"
+        if "content" not in item or not item["content"]:
+            parts = []
+            if "concept_explanation" in item and item["concept_explanation"]:
+                parts.append(str(item["concept_explanation"]))
+            if "why_it_is_needed" in item and item["why_it_is_needed"]:
+                parts.append("### Why It Is Needed\n" + str(item["why_it_is_needed"]))
+            if "step_by_step_working" in item and item["step_by_step_working"]:
+                working = item["step_by_step_working"]
+                if isinstance(working, list):
+                    working_lines = []
+                    for step in working:
+                        working_lines.append(f"- {step}")
+                    parts.append("### Step-by-Step Working\n" + "\n".join(working_lines))
+                else:
+                    parts.append("### Step-by-Step Working\n" + str(working))
+            if "mathematical_formulation" in item and item["mathematical_formulation"]:
+                parts.append("### Mathematical Formulation\n" + str(item["mathematical_formulation"]))
+            item["content"] = "\n\n".join(parts)
+
+    # Normalize code_blocks
+    for item in data.get("code_blocks", []):
+        if not isinstance(item, dict):
+            continue
+        if "title" not in item or not item["title"]:
+            if "heading" in item and item["heading"]:
+                item["title"] = item["heading"]
+            elif "name" in item and item["name"]:
+                item["title"] = item["name"]
+            else:
+                item["title"] = "Code Implementation"
 
     # Iterate over all list sections that contain timestamp fields
     for list_key in required_list_keys:
@@ -286,6 +345,13 @@ Generate the revision pack following the Revision JSON contract."""
     }
 
     revision_dict = _parse_or_retry_json(payload)
+    if isinstance(revision_dict, list):
+        if len(revision_dict) > 0 and isinstance(revision_dict[0], dict):
+            revision_dict = revision_dict[0]
+        else:
+            revision_dict = {}
+    elif not isinstance(revision_dict, dict):
+        revision_dict = {}
 
     # Validate structure and provide fallbacks if missing
     if "one_line_summary" not in revision_dict:

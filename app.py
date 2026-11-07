@@ -39,10 +39,10 @@ if not st.session_state.get("intro_shown", False):
 
 # App header block
 st.markdown("""
-<div class="ns-header">
-  <span class="ns-title">NOTESCRIPT ML</span>
-  <span class="ns-tagline">CampusX 100 Days of ML, notes that actually stick.</span>
-</div>
+    <div class="main-header">
+        <h1 class="main-title">⚡ NoteScript ML</h1>
+        <p class="sub-title">CampusX 100 Days of ML — Concise, automated notes & code breakdown</p>
+    </div>
 """, unsafe_allow_html=True)
 
 
@@ -384,9 +384,8 @@ if result:
 
                 st.markdown(f"**Q{q_idx + 1}: {q_text}**")
                 choice = st.radio(
-                    "Options",
-                    options=range(len(opts)),
-                    format_func=lambda i: opts[i] if i < len(opts) else "",
+                    f"Options for Question {q_idx + 1}",
+                    options=opts,
                     key=f"quiz_opt_{q_idx}",
                     label_visibility="collapsed",
                 )
@@ -395,10 +394,13 @@ if result:
                     st.session_state["quiz_checked"][q_idx] = True
 
                 if st.session_state.get("quiz_checked", {}).get(q_idx):
-                    if choice == correct_idx:
-                        st.success(f"✅ Correct! Option {choice}: {explanation}")
+                    correct_answer = ""
+                    if 0 <= correct_idx < len(opts):
+                        correct_answer = opts[correct_idx]
+                    if choice == correct_answer:
+                        st.success(f"✅ Correct! {explanation}")
                     else:
-                        st.error(f"❌ Incorrect. Correct was Option {correct_idx}. Explanation: {explanation}")
+                        st.error(f"❌ Incorrect. Correct answer: {correct_answer}. Explanation: {explanation}")
 
             st.markdown("### Interview Questions")
             for i_idx, iq in enumerate(rev.get("interview_questions", []), start=1):

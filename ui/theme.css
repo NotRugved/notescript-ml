@@ -2,19 +2,29 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap');
 
 /* ── Global Reset & Base ──────────────────────────────────────────────── */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
     box-sizing: border-box;
     border-radius: 0 !important;
 }
 
-html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"] {
+html,
+body,
+[data-testid="stAppViewContainer"],
+[data-testid="stApp"] {
     background-color: #050505 !important;
     color: #ffffff !important;
     font-family: 'DM Sans', sans-serif !important;
 }
 
 /* ── Headings ─────────────────────────────────────────────────────────── */
-h1, h2, h3, h4, h5, h6,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
 [data-testid="stMarkdownContainer"] h1,
 [data-testid="stMarkdownContainer"] h2,
 [data-testid="stMarkdownContainer"] h3 {
@@ -42,13 +52,11 @@ h1, h2, h3, h4, h5, h6,
     content: '';
     position: absolute;
     inset: 0;
-    background-image: repeating-linear-gradient(
-        -45deg,
-        #ff2b2b 0,
-        #ff2b2b 1px,
-        transparent 0,
-        transparent 50%
-    );
+    background-image: repeating-linear-gradient(-45deg,
+            #ff2b2b 0,
+            #ff2b2b 1px,
+            transparent 0,
+            transparent 50%);
     background-size: 10px 10px;
     opacity: 0.07;
     pointer-events: none;
@@ -104,8 +112,8 @@ h1, h2, h3, h4, h5, h6,
 }
 
 /* ── Buttons ──────────────────────────────────────────────────────────── */
-[data-testid="stButton"] > button,
-[data-testid="stFormSubmitButton"] > button {
+[data-testid="stButton"]>button,
+[data-testid="stFormSubmitButton"]>button {
     background-color: #111111 !important;
     color: #ffffff !important;
     border: 2px solid #ffffff !important;
@@ -117,22 +125,22 @@ h1, h2, h3, h4, h5, h6,
     transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.1s ease !important;
 }
 
-[data-testid="stButton"] > button:hover,
-[data-testid="stFormSubmitButton"] > button:hover {
+[data-testid="stButton"]>button:hover,
+[data-testid="stFormSubmitButton"]>button:hover {
     transform: translate(2px, 2px) !important;
     box-shadow: 2px 2px 0 #ff2b2b !important;
     background-color: #ff2b2b !important;
     color: #ffffff !important;
 }
 
-[data-testid="stButton"] > button:active,
-[data-testid="stFormSubmitButton"] > button:active {
+[data-testid="stButton"]>button:active,
+[data-testid="stFormSubmitButton"]>button:active {
     transform: translate(4px, 4px) !important;
     box-shadow: 0 0 0 #ff2b2b !important;
 }
 
 /* ── Download Buttons ─────────────────────────────────────────────────── */
-[data-testid="stDownloadButton"] > button {
+[data-testid="stDownloadButton"]>button {
     background-color: #050505 !important;
     color: #ff2b2b !important;
     border: 2px solid #ff2b2b !important;
@@ -144,7 +152,7 @@ h1, h2, h3, h4, h5, h6,
     transition: transform 0.1s ease, box-shadow 0.1s ease !important;
 }
 
-[data-testid="stDownloadButton"] > button:hover {
+[data-testid="stDownloadButton"]>button:hover {
     transform: translate(2px, 2px) !important;
     box-shadow: 2px 2px 0 #ff2b2b !important;
     color: #ffffff !important;
@@ -192,7 +200,7 @@ h1, h2, h3, h4, h5, h6,
 }
 
 /* ── Inputs & Selects ─────────────────────────────────────────────────── */
-[data-baseweb="select"] > div,
+[data-baseweb="select"]>div,
 [data-baseweb="input"],
 [data-baseweb="textarea"],
 [data-testid="stTextInput"] input,
@@ -204,7 +212,7 @@ h1, h2, h3, h4, h5, h6,
     font-family: 'DM Sans', sans-serif !important;
 }
 
-[data-baseweb="select"] > div:focus-within,
+[data-baseweb="select"]>div:focus-within,
 [data-testid="stTextInput"] input:focus,
 [data-testid="stNumberInput"] input:focus,
 [data-testid="stTextArea"] textarea:focus {
@@ -232,7 +240,7 @@ h1, h2, h3, h4, h5, h6,
     color: #cccccc !important;
 }
 
-[data-baseweb="radio"] [data-checked="true"] ~ div {
+[data-baseweb="radio"] [data-checked="true"]~div {
     color: #ff2b2b !important;
 }
 
@@ -245,11 +253,11 @@ h1, h2, h3, h4, h5, h6,
 }
 
 /* ── Progress Bar ─────────────────────────────────────────────────────── */
-[data-testid="stProgress"] > div > div {
+[data-testid="stProgress"]>div>div {
     background-color: #ff2b2b !important;
 }
 
-[data-testid="stProgress"] > div {
+[data-testid="stProgress"]>div {
     background-color: #222222 !important;
     border: 1px solid #333333 !important;
 }
@@ -347,12 +355,15 @@ hr {
     width: 6px;
     height: 6px;
 }
+
 ::-webkit-scrollbar-track {
     background: #050505;
 }
+
 ::-webkit-scrollbar-thumb {
     background: #ff2b2b;
 }
+
 ::-webkit-scrollbar-thumb:hover {
     background: #cc0000;
 }
@@ -365,7 +376,8 @@ hr {
 
 /* ── Caption / subtext ────────────────────────────────────────────────── */
 [data-testid="stCaptionContainer"],
-small, .stCaption {
+small,
+.stCaption {
     color: #888888 !important;
     font-family: 'DM Sans', sans-serif !important;
 }
