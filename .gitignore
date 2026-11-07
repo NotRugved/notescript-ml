@@ -1,0 +1,7 @@
+.env
+.env*
+.venv
+__pycache__
+notescript.db
+api_key.txt
+github_pers_acc_token.txt
