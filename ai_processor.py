@@ -6,6 +6,8 @@ import time
 import urllib.error
 import urllib.request
 from typing import Any
+import re
+import copy
 
 from dotenv import load_dotenv
 
@@ -145,39 +147,54 @@ def call_with_retry(payload: dict) -> str:
 
 
 def _clean_json_text(raw_text: str) -> str:
-    """Strip markdown code fence wrappers from JSON output."""
+    """Strip markdown code fence wrappers and extract valid JSON string."""
     cleaned = raw_text.strip()
-    if cleaned.startswith("```"):
-        lines = cleaned.split("\n")
-        first_line = lines[0]
-        if "```" in first_line:
-            lines = lines[1:]
-        if len(lines) > 0 and lines[len(lines) - 1].strip() == "```":
-            lines = lines[:-1]
-        cleaned = "\n".join(lines).strip()
-    return cleaned
+    # Strip leading/trailing code fences if present
+    cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\s*```$", "", cleaned)
+    return cleaned.strip()
 
 
 def _parse_or_retry_json(payload: dict) -> dict:
-    """Parse JSON response from API, retrying once if syntax is invalid."""
+    """Parse JSON response from API with strict=False, retrying once if syntax is invalid."""
     raw_text = call_with_retry(payload)
     cleaned = _clean_json_text(raw_text)
+
     try:
-        return json.loads(cleaned)
+        return json.loads(cleaned, strict=False)
     except json.JSONDecodeError:
-        # Retry once asking explicitly for strict valid JSON
-        retry_payload = dict(payload)
+        # Regex search to extract outer bracket JSON payload if stray text exists
+        match = re.search(r"\{.*\}", cleaned, re.DOTALL)
+        if match:
+            try:
+                return json.loads(match.group(0), strict=False)
+            except json.JSONDecodeError:
+                pass
+
+        # Deep copy to avoid mutating original payload dict structure
+        retry_payload = copy.deepcopy(payload)
         contents = retry_payload.get("contents", [])
         if len(contents) > 0:
-            prompt_part = {"text": "The previous response was not valid JSON. Please fix and return ONLY valid raw JSON."}
+            prompt_part = {
+                "text": "The previous response had invalid JSON formatting/control characters. Return ONLY valid raw JSON with proper string escaping."
+            }
             contents[0]["parts"].append(prompt_part)
+
         raw_text_retry = call_with_retry(retry_payload)
         cleaned_retry = _clean_json_text(raw_text_retry)
         try:
-            return json.loads(cleaned_retry)
-        except json.JSONDecodeError as decode_error:
-            raise RuntimeError(f"Failed to parse valid JSON from Gemini output: {cleaned_retry[:300]}") from decode_error
+            return json.loads(cleaned_retry, strict=False)
+        except json.JSONDecodeError:
+            match_retry = re.search(r"\{.*\}", cleaned_retry, re.DOTALL)
+            if match_retry:
+                try:
+                    return json.loads(match_retry.group(0), strict=False)
+                except json.JSONDecodeError:
+                    pass
 
+            raise RuntimeError(
+                f"Failed to parse valid JSON from Gemini output: {cleaned_retry[:300]}"
+            )
 
 def fix_timestamps(data: dict, start_seconds: int, end_seconds: int) -> dict:
     """Adjust out-of-range timestamps and ensure required segment list keys exist."""
