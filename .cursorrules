@@ -1,0 +1,16 @@
+# NoteScript ML Rules & Skills Setup
+
+## 1. FROZEN BACKEND (DO NOT TOUCH)
+- Strictly DO NOT edit, alter, or rewrite: database.py, extractor.py, ai_processor.py, pipeline.py, exports.py.
+- DO NOT change st.session_state key names, database schemas, or download button logic.
+
+## 2. MILES MORALES NEO-BRUTALIST DESIGN SYSTEM
+- Primary Background: #050505 (Deep dark canvas grid/dots).
+- Accent Highlights: #ff2b2b (Spider-Verse Red) and glowing text/borders.
+- Sharp Shadow Cards: `box-shadow: 4px 4px 0px #ff2b2b;`
+- Typography Fonts: 'Space Mono' (Headings/Code), 'Kalam' / 'Caveat' (Handwritten notes), 'Inter' (Body).
+
+## 3. UI LAYOUT & CONTRAST FIXES
+- Single View Navigation: Sidebar menu (`st.sidebar.radio`) so theory, code, and math NEVER stack vertically.
+- Lined Notebook CSS: Create `.notebook-page` class with lined paper background gradient + red margin line.
+- Zero white-on-white text bugs across all dark-themed Streamlit widgets.
