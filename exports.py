@@ -1,7 +1,6 @@
 """Export generators for NoteScript ML."""
 
-from extractor import parse_time
-
+from yt_extractor import parse_time
 
 def _create_youtube_timestamp_link(video_id: str, timestamp_str: str) -> str:
     """Convert timestamp text to a clickable markdown youtu.be link."""
