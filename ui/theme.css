@@ -402,3 +402,33 @@ small,
     font-size: 1.8rem !important;
     font-weight: 700 !important;
 }
+
+/* NoteScript ML Lined Paper & Theme Base */
+body, .stApp {
+    background-color: #050505;
+    color: #f0f0f0;
+    font-family: 'Inter', sans-serif;
+}
+
+h1, h2, h3 {
+    font-family: 'Space Mono', monospace;
+    letter-spacing: -0.5px;
+}
+
+.notebook-page {
+    background-color: #121214;
+    background-image: linear-gradient(#1e1e24 1px, transparent 1px);
+    background-size: 100% 28px;
+    border-left: 4px solid #ff2b2b;
+    border-radius: 4px;
+    padding: 20px 20px 20px 35px;
+    font-family: 'Kalam', cursive;
+    box-shadow: 4px 4px 0px #ff2b2b;
+    margin-bottom: 20px;
+}
+
+.notebook-handwritten {
+    font-family: 'Caveat', cursive;
+    color: #ff2b2b;
+    font-size: 1.25rem;
+}
