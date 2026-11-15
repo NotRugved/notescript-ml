@@ -13,7 +13,7 @@ from database import (
     save_segment,
     save_video,
 )
-from extractor import (
+from yt_extractor import (
     get_notebook_text,
     get_video_id,
     get_video_info,

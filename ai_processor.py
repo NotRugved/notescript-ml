@@ -11,7 +11,7 @@ import copy
 
 from dotenv import load_dotenv
 
-from extractor import format_time, parse_time
+from yt_extractor import format_time, parse_time
 
 load_dotenv()
 

@@ -9,7 +9,7 @@ import streamlit as st
 
 from database import list_videos
 from exports import build_code_py, build_main_notes_md, build_revision_md
-from extractor import (
+from yt_extractor import (
     find_day_candidates,
     get_video_id,
     list_day_folders,
