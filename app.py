@@ -6,15 +6,13 @@ st.set_page_config(page_title="NoteScript ML", page_icon="⚙️", layout="wide"
 apply_theme()
 show_sidebar_common()
 
-# Load Factory Animation HTML & CSS
+# Load Factory Animation via components.html (raw HTML, no sanitization)
 try:
     with open("ui/factory.html", "r", encoding="utf-8") as f:
         factory_html = f.read()
-    st.markdown(factory_html, unsafe_allow_html=True)
+    st.components.v1.html(factory_html, height=480, scrolling=False)
 except FileNotFoundError:
     st.error("Factory animation file not found.")
-
-st.markdown("<br>", unsafe_allow_html=True)
 
 col_gen, col_lib, col_prog = st.columns(3)
 with col_gen:
