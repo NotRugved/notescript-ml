@@ -1,37 +1,23 @@
 /* NoteScript ML — Miles Morales Neo-Brutalist Theme */
 @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Kalam:wght@400;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap');
-/* ── Global Reset & Base ──────────────────────────────────────────────── */
-*,
-*::before,
-*::after {
-    box-sizing: border-box;
-    border-radius: 0 !important;
-}
 
-html,
-body,
-[data-testid="stAppViewContainer"],
-[data-testid="stApp"] {
+/* ── Global Reset & Base ──────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; border-radius: 0 !important; }
+
+html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"] {
     background-color: #050505 !important;
     color: #ffffff !important;
-    font-family: 'DM Sans', sans-serif !important;
+    font-family: 'Inter', sans-serif !important;
 }
 
 /* ── Headings ─────────────────────────────────────────────────────────── */
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-[data-testid="stMarkdownContainer"] h1,
-[data-testid="stMarkdownContainer"] h2,
-[data-testid="stMarkdownContainer"] h3 {
+h1, h2, h3, h4, h5, h6 {
     font-family: 'Space Mono', monospace !important;
     text-transform: uppercase !important;
-    letter-spacing: 0.04em !important;
+    letter-spacing: -0.02em !important;
     color: #ffffff !important;
+    text-shadow: 3px 3px 0 #ff2b2b;
 }
 
 /* ── App Header Block ─────────────────────────────────────────────────── */
@@ -39,396 +25,57 @@ h6,
     display: flex;
     flex-direction: column;
     gap: 6px;
-    padding: 28px 32px 24px 32px;
-    margin-bottom: 24px;
-    background-color: #050505;
-    border-bottom: 2px solid #ff2b2b;
+    padding: 40px;
+    margin-bottom: 30px;
+    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+    border-bottom: 4px solid #ff2b2b;
+    border-left: 10px solid #ff2b2b;
     position: relative;
-    overflow: hidden;
-}
-
-/* Halftone diagonal slash pattern */
-.ns-header::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background-image: repeating-linear-gradient(-45deg,
-            #ff2b2b 0,
-            #ff2b2b 1px,
-            transparent 0,
-            transparent 50%);
-    background-size: 10px 10px;
-    opacity: 0.07;
-    pointer-events: none;
-}
-
-/* Red accent bar on the left */
-.ns-header::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 5px;
-    background: #ff2b2b;
 }
 
 .ns-title {
     font-family: 'Space Mono', monospace !important;
-    font-size: 2.4rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: #ffffff;
-    line-height: 1;
-    padding-left: 12px;
-}
-
-.ns-tagline {
-    font-family: 'DM Sans', sans-serif !important;
-    font-size: 1rem;
-    color: #cccccc;
-    padding-left: 12px;
-}
-
-/* ── Sidebar ──────────────────────────────────────────────────────────── */
-[data-testid="stSidebar"] {
-    background-color: #111111 !important;
-    border-right: 2px solid #ff2b2b !important;
-}
-
-[data-testid="stSidebar"] h1,
-[data-testid="stSidebar"] h2,
-[data-testid="stSidebar"] h3,
-[data-testid="stSidebar"] .stMarkdown h1,
-[data-testid="stSidebar"] .stMarkdown h2,
-[data-testid="stSidebar"] .stMarkdown h3 {
-    font-family: 'Space Mono', monospace !important;
-    text-transform: uppercase !important;
-}
-
-[data-testid="stSidebarHeader"] {
-    background-color: #111111 !important;
+    font-size: 3.5rem;
+    font-weight: 900;
+    margin: 0;
 }
 
 /* ── Buttons ──────────────────────────────────────────────────────────── */
-[data-testid="stButton"]>button,
-[data-testid="stFormSubmitButton"]>button {
-    background-color: #111111 !important;
+[data-testid="stButton"]>button {
+    background: #111111 !important;
     color: #ffffff !important;
     border: 2px solid #ffffff !important;
-    box-shadow: 4px 4px 0 #ff2b2b !important;
+    box-shadow: 6px 6px 0 #ff2b2b !important;
     font-family: 'Space Mono', monospace !important;
     font-weight: 700 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.05em !important;
-    transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.1s ease !important;
+    transition: all 0.2s ease !important;
 }
 
-[data-testid="stButton"]>button:hover,
-[data-testid="stFormSubmitButton"]>button:hover {
+[data-testid="stButton"]>button:hover {
     transform: translate(2px, 2px) !important;
     box-shadow: 2px 2px 0 #ff2b2b !important;
-    background-color: #ff2b2b !important;
-    color: #ffffff !important;
+    background: #ff2b2b !important;
 }
 
-[data-testid="stButton"]>button:active,
-[data-testid="stFormSubmitButton"]>button:active {
-    transform: translate(4px, 4px) !important;
-    box-shadow: 0 0 0 #ff2b2b !important;
+/* ── Containers & Focus Effects ────────────────────────────────────────── */
+[data-testid="stContainer"] {
+    background: #111111 !important;
+    border: 2px solid #333 !important;
+    padding: 20px !important;
+    margin-bottom: 20px !important;
+    transition: all 0.3s ease;
 }
 
-/* ── Download Buttons ─────────────────────────────────────────────────── */
-[data-testid="stDownloadButton"]>button {
-    background-color: #050505 !important;
-    color: #ff2b2b !important;
-    border: 2px solid #ff2b2b !important;
-    box-shadow: 4px 4px 0 #ff2b2b !important;
-    font-family: 'Space Mono', monospace !important;
-    font-weight: 700 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.05em !important;
-    transition: transform 0.1s ease, box-shadow 0.1s ease !important;
-}
-
-[data-testid="stDownloadButton"]>button:hover {
-    transform: translate(2px, 2px) !important;
-    box-shadow: 2px 2px 0 #ff2b2b !important;
-    color: #ffffff !important;
-    background-color: #ff2b2b !important;
-}
-
-/* ── Tabs ─────────────────────────────────────────────────────────────── */
-[data-baseweb="tab-list"] {
-    background-color: #111111 !important;
-    border-bottom: 2px solid #ff2b2b !important;
-    gap: 0 !important;
-}
-
-[data-baseweb="tab"] {
-    background-color: #111111 !important;
-    color: #aaaaaa !important;
-    border: 2px solid transparent !important;
-    border-bottom: none !important;
-    font-family: 'Space Mono', monospace !important;
-    font-weight: 700 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.04em !important;
-    padding: 10px 20px !important;
-    transition: color 0.15s !important;
-}
-
-[data-baseweb="tab"]:hover {
-    color: #ffffff !important;
-    background-color: #1a1a1a !important;
-}
-
-[aria-selected="true"][data-baseweb="tab"] {
-    background-color: #ff2b2b !important;
-    color: #ffffff !important;
-    border: 2px solid #ff2b2b !important;
-    border-bottom: none !important;
-}
-
-[data-baseweb="tab-highlight"] {
-    display: none !important;
-}
-
-[data-baseweb="tab-border"] {
-    display: none !important;
-}
-
-/* ── Inputs & Selects ─────────────────────────────────────────────────── */
-[data-baseweb="select"]>div,
-[data-baseweb="input"],
-[data-baseweb="textarea"],
-[data-testid="stTextInput"] input,
-[data-testid="stNumberInput"] input,
-[data-testid="stTextArea"] textarea {
-    background-color: #111111 !important;
-    color: #ffffff !important;
-    border: 2px solid #ffffff !important;
-    font-family: 'DM Sans', sans-serif !important;
-}
-
-[data-baseweb="select"]>div:focus-within,
-[data-testid="stTextInput"] input:focus,
-[data-testid="stNumberInput"] input:focus,
-[data-testid="stTextArea"] textarea:focus {
+[data-testid="stContainer"]:hover {
     border-color: #ff2b2b !important;
-    box-shadow: 3px 3px 0 #ff2b2b !important;
-    outline: none !important;
+    box-shadow: 0 0 15px rgba(255, 43, 43, 0.2);
 }
 
-/* Select dropdown list */
-[data-baseweb="popover"] [role="listbox"],
-[data-baseweb="menu"] {
-    background-color: #111111 !important;
-    border: 2px solid #ffffff !important;
-}
+/* ── Library List Font Size ────────────────────────────────────────────── */
+.stButton > button { font-size: 0.8rem !important; }
 
-[data-baseweb="menu"] li:hover,
-[data-baseweb="menu"] [aria-selected="true"] {
-    background-color: #ff2b2b !important;
-    color: #ffffff !important;
-}
-
-/* ── Radio Buttons ────────────────────────────────────────────────────── */
-[data-baseweb="radio"] label {
-    font-family: 'DM Sans', sans-serif !important;
-    color: #cccccc !important;
-}
-
-[data-baseweb="radio"] [data-checked="true"]~div {
-    color: #ff2b2b !important;
-}
-
-/* ── Multiselect ──────────────────────────────────────────────────────── */
-[data-baseweb="tag"] {
-    background-color: #ff2b2b !important;
-    color: #ffffff !important;
-    border: none !important;
-    font-family: 'DM Sans', sans-serif !important;
-}
-
-/* ── Progress Bar ─────────────────────────────────────────────────────── */
-[data-testid="stProgress"]>div>div {
-    background-color: #ff2b2b !important;
-}
-
-[data-testid="stProgress"]>div {
-    background-color: #222222 !important;
-    border: 1px solid #333333 !important;
-}
-
-/* ── Expander / st.status ─────────────────────────────────────────────── */
-[data-testid="stExpander"] {
-    background-color: #111111 !important;
-    border: 2px solid #ffffff !important;
-}
-
-[data-testid="stExpander"] summary {
-    background-color: #111111 !important;
-    color: #ffffff !important;
-    font-family: 'Space Mono', monospace !important;
-    font-weight: 700 !important;
-}
-
-[data-testid="stExpander"] summary:hover {
-    background-color: #1a1a1a !important;
-    color: #ff2b2b !important;
-}
-
-/* st.status widget */
-[data-testid="stStatusWidget"],
-[data-testid="element-container"] [data-testid="stStatus"] {
-    background-color: #111111 !important;
-    border: 2px solid #333333 !important;
-    color: #ffffff !important;
-}
-
-/* ── Code Blocks ──────────────────────────────────────────────────────── */
-[data-testid="stCodeBlock"],
-[data-testid="stCodeBlock"] pre {
-    background-color: #0a0a0a !important;
-    border: 2px solid #ffffff !important;
-    color: #ffffff !important;
-    font-family: 'Space Mono', monospace !important;
-}
-
-[data-testid="stCodeBlock"] code {
-    color: #e0e0e0 !important;
-}
-
-/* Copy button on code blocks */
-[data-testid="stCodeBlock"] button {
-    background-color: #ff2b2b !important;
-    color: #ffffff !important;
-    border: 1px solid #ffffff !important;
-}
-
-/* ── Markdown links ───────────────────────────────────────────────────── */
-[data-testid="stMarkdownContainer"] a {
-    color: #ff2b2b !important;
-    text-decoration: underline !important;
-    text-underline-offset: 3px !important;
-}
-
-[data-testid="stMarkdownContainer"] a:hover {
-    color: #ff6666 !important;
-}
-
-/* ── Cards / Info boxes ───────────────────────────────────────────────── */
-.ns-card {
-    background-color: #111111;
-    border: 2px solid #ffffff;
-    box-shadow: 4px 4px 0 #ff2b2b;
-    padding: 16px 20px;
-    margin-bottom: 16px;
-}
-
-.ns-card-red {
-    background-color: #111111;
-    border: 2px solid #ff2b2b;
-    box-shadow: 4px 4px 0 #ffffff;
-    padding: 16px 20px;
-    margin-bottom: 16px;
-}
-
-/* ── Info / warning / success alerts ─────────────────────────────────── */
-[data-testid="stAlert"] {
-    background-color: #111111 !important;
-    border: 2px solid #ff2b2b !important;
-    color: #ffffff !important;
-}
-
-/* ── Dividers ─────────────────────────────────────────────────────────── */
-hr {
-    border-color: #ff2b2b !important;
-    border-width: 1px !important;
-    opacity: 0.4 !important;
-}
-
-/* ── Scrollbar ────────────────────────────────────────────────────────── */
-::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-}
-
-::-webkit-scrollbar-track {
-    background: #050505;
-}
-
-::-webkit-scrollbar-thumb {
-    background: #ff2b2b;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: #cc0000;
-}
-
-/* ── Main content area ────────────────────────────────────────────────── */
-[data-testid="stMain"],
-[data-testid="block-container"] {
-    background-color: #050505 !important;
-}
-
-/* ── Caption / subtext ────────────────────────────────────────────────── */
-[data-testid="stCaptionContainer"],
-small,
-.stCaption {
-    color: #888888 !important;
-    font-family: 'DM Sans', sans-serif !important;
-}
-
-/* ── Metric widgets ───────────────────────────────────────────────────── */
-[data-testid="stMetric"] {
-    background-color: #111111 !important;
-    border: 2px solid #333333 !important;
-    padding: 12px !important;
-}
-
-[data-testid="stMetricLabel"] {
-    color: #aaaaaa !important;
-    font-family: 'Space Mono', monospace !important;
-    text-transform: uppercase !important;
-    font-size: 0.75rem !important;
-}
-
-[data-testid="stMetricValue"] {
-    color: #ff2b2b !important;
-    font-family: 'Space Mono', monospace !important;
-    font-size: 1.8rem !important;
-    font-weight: 700 !important;
-}
-
-/* NoteScript ML Lined Paper & Theme Base */
-body, .stApp {
-    background-color: #050505;
-    color: #f0f0f0;
-    font-family: 'Inter', sans-serif;
-}
-
-h1, h2, h3 {
-    font-family: 'Space Mono', monospace;
-    letter-spacing: -0.5px;
-}
-
-.notebook-page {
-    background-color: #121214;
-    background-image: linear-gradient(#1e1e24 1px, transparent 1px);
-    background-size: 100% 28px;
-    border-left: 4px solid #ff2b2b;
-    border-radius: 4px;
-    padding: 20px 20px 20px 35px;
-    font-family: 'Kalam', cursive;
-    box-shadow: 4px 4px 0px #ff2b2b;
-    margin-bottom: 20px;
-}
-
-.notebook-handwritten {
-    font-family: 'Caveat', cursive;
-    color: #ff2b2b;
-    font-size: 1.25rem;
+/* ── Sidebar ──────────────────────────────────────────────────────────── */
+[data-testid="stSidebar"] {
+    background: #0a0a0a !important;
+    border-right: 2px solid #ff2b2b !important;
 }

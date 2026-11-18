@@ -1,0 +1,252 @@
+<div class="factory-wrapper">
+  <div class="factory-bg"></div>
+  <div class="factory-grid"></div>
+  <div class="factory-title">NOTESCRIPT-ML</div>
+  <div class="factory-subtitle">⚡ The Ultimate AI Machine Learning Notes &amp; Revision Factory ⚡</div>
+
+  <div class="factory-machine">
+    <div class="gear gear-left"><div class="gear-inner">⚙️</div></div>
+    <div class="gear gear-right"><div class="gear-inner">⚙️</div></div>
+
+    <div class="conveyor">
+      <div class="belt-line"></div>
+      <div class="belt-line belt-2"></div>
+    </div>
+
+    <div class="docs-track">
+      <div class="doc-card" style="animation-delay: 0s;">📄</div>
+      <div class="doc-card" style="animation-delay: 1.2s;">📄</div>
+      <div class="doc-card" style="animation-delay: 2.4s;">📄</div>
+      <div class="doc-card" style="animation-delay: 3.6s;">📄</div>
+      <div class="doc-card" style="animation-delay: 4.8s;">📄</div>
+    </div>
+
+    <div class="stations-row">
+      <div class="station active">
+        <div class="station-icon">📋</div>
+        <div class="station-text">URL / DAY</div>
+      </div>
+      <div class="station-arrow">➔</div>
+      <div class="station active">
+        <div class="station-icon">🎥</div>
+        <div class="station-text">YT-DLP</div>
+      </div>
+      <div class="station-arrow">➔</div>
+      <div class="station active glow">
+        <div class="station-icon">🤖</div>
+        <div class="station-text">GEMINI AI</div>
+      </div>
+      <div class="station-arrow">➔</div>
+      <div class="station active">
+        <div class="station-icon">📦</div>
+        <div class="station-text">MERGE</div>
+      </div>
+      <div class="station-arrow">➔</div>
+      <div class="station success">
+        <div class="station-icon">🚀</div>
+        <div class="station-text">NOTES &amp; CODE</div>
+      </div>
+    </div>
+
+    <div class="status-panel">
+      <div class="status-indicator"><span class="dot green"></span> SYSTEM ONLINE</div>
+      <div class="status-indicator"><span class="dot amber"></span> GEMINI 3.8 FLASH</div>
+      <div class="status-indicator"><span class="dot green"></span> 100 DAYS READY</div>
+    </div>
+  </div>
+</div>
+
+<style>
+.factory-wrapper {
+  background: linear-gradient(135deg, #080808 0%, #121212 100%);
+  border: 3px solid #ff2b2b;
+  box-shadow: 8px 8px 0px #ff2b2b;
+  padding: 30px;
+  margin: 20px 0;
+  position: relative;
+  overflow: hidden;
+  font-family: 'Space Mono', monospace;
+  text-align: center;
+}
+
+.factory-bg {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image: radial-gradient(#222 1px, transparent 1px);
+  background-size: 20px 20px;
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.factory-title {
+  font-size: 3rem;
+  font-weight: 900;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  text-shadow: 4px 4px 0px #ff2b2b;
+  margin-bottom: 5px;
+}
+
+.factory-subtitle {
+  font-size: 1rem;
+  color: #ff5555;
+  margin-bottom: 30px;
+  letter-spacing: 1px;
+}
+
+.factory-machine {
+  position: relative;
+  background: #050505;
+  border: 2px solid #333;
+  padding: 40px 20px;
+  margin-top: 10px;
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.gear {
+  position: absolute;
+  font-size: 45px;
+  animation: spin 6s linear infinite;
+  opacity: 0.8;
+}
+.gear-left { top: 15px; left: 20px; }
+.gear-right { top: 15px; right: 20px; animation-direction: reverse; }
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.conveyor {
+  width: 90%;
+  height: 8px;
+  background: #222;
+  border-bottom: 3px solid #ff2b2b;
+  position: relative;
+  margin: 20px 0 40px 0;
+}
+
+.belt-line {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: repeating-linear-gradient(90deg, #ff2b2b, #ff2b2b 15px, transparent 15px, transparent 30px);
+  animation: conveyor 1.5s linear infinite;
+}
+
+@keyframes conveyor {
+  0% { background-position: 0 0; }
+  100% { background-position: 30px 0; }
+}
+
+.docs-track {
+  position: absolute;
+  top: 75px;
+  width: 85%;
+  height: 40px;
+  pointer-events: none;
+}
+
+.doc-card {
+  position: absolute;
+  font-size: 24px;
+  animation: moveDoc 6s linear infinite;
+  opacity: 0;
+}
+
+@keyframes moveDoc {
+  0% { left: 0%; opacity: 0; transform: scale(0.8); }
+  10% { opacity: 1; transform: scale(1); }
+  90% { opacity: 1; transform: scale(1); }
+  100% { left: 95%; opacity: 0; transform: scale(0.8); }
+}
+
+.stations-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  z-index: 2;
+  margin-top: 10px;
+}
+
+.station {
+  background: #111;
+  border: 2px solid #444;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 90px;
+  transition: all 0.3s;
+}
+
+.station.active {
+  border-color: #ff2b2b;
+  box-shadow: 4px 4px 0px rgba(255, 43, 43, 0.4);
+}
+
+.station.success {
+  border-color: #00ff66;
+  box-shadow: 4px 4px 0px rgba(0, 255, 102, 0.4);
+}
+
+.station.glow {
+  animation: pulseGlow 1.5s infinite alternate;
+}
+
+@keyframes pulseGlow {
+  from { border-color: #ff2b2b; box-shadow: 0 0 5px #ff2b2b; }
+  to { border-color: #fff; box-shadow: 0 0 20px #ff2b2b; }
+}
+
+.station-icon {
+  font-size: 22px;
+  margin-bottom: 4px;
+}
+
+.station-text {
+  font-size: 0.65rem;
+  font-weight: bold;
+  color: #fff;
+  letter-spacing: 1px;
+}
+
+.station-arrow {
+  color: #ff2b2b;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+.status-panel {
+  display: flex;
+  justify-content: center;
+  gap: 25px;
+  margin-top: 30px;
+  font-size: 0.75rem;
+  color: #aaa;
+  border-top: 1px dashed #333;
+  padding-top: 15px;
+  width: 100%;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  display: inline-block;
+}
+
+.dot.green { background: #00ff66; box-shadow: 0 0 6px #00ff66; }
+.dot.amber { background: #ffaa00; box-shadow: 0 0 6px #ffaa00; }
+</style>
