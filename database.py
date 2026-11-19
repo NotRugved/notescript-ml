@@ -62,6 +62,34 @@ def init_db(db_path: str = "notescript.db") -> None:
             )
             """
         )
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS quiz_attempts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                quiz_id TEXT,
+                video_id TEXT,
+                total_questions INTEGER,
+                score INTEGER,
+                time_taken_seconds INTEGER,
+                topic_weaknesses TEXT,
+                created_at TEXT
+            )
+            """
+        )
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS generation_queue (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                day_num INTEGER,
+                video_url TEXT,
+                title TEXT,
+                status TEXT,
+                error_message TEXT,
+                created_at TEXT,
+                updated_at TEXT
+            )
+            """
+        )
         connection.commit()
     finally:
         connection.close()
@@ -369,6 +397,313 @@ def save_cached_playlist(
                 ),
             )
         connection.commit()
+    finally:
+        connection.close()
+
+
+def search_notes(query: str, db_path: str = "notescript.db") -> list[dict]:
+    """Search videos whose title, day_label, or segment content matches query."""
+    connection = sqlite3.connect(db_path)
+    try:
+        cursor = connection.cursor()
+        search_pattern = f"%{query}%"
+        cursor.execute(
+            """
+            SELECT DISTINCT v.video_id, v.title, v.day_label, v.duration_seconds, v.created_at
+            FROM videos v
+            LEFT JOIN segments s ON v.video_id = s.video_id
+            WHERE v.title LIKE ? OR v.day_label LIKE ? OR s.json_text LIKE ?
+            ORDER BY v.created_at DESC
+            """,
+            (search_pattern, search_pattern, search_pattern),
+        )
+        rows = cursor.fetchall()
+        result = []
+        for row in rows:
+            result.append(
+                {
+                    "video_id": row[0],
+                    "title": row[1],
+                    "day_label": row[2],
+                    "duration_seconds": row[3],
+                    "created_at": row[4],
+                }
+            )
+        return result
+    finally:
+        connection.close()
+
+
+def get_progress_stats(db_path: str = "notescript.db") -> dict:
+    """Get overall progress stats (total videos, days covered)."""
+    connection = sqlite3.connect(db_path)
+    try:
+        cursor = connection.cursor()
+        cursor.execute("SELECT COUNT(DISTINCT video_id) FROM videos")
+        total_videos = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(DISTINCT day_label) FROM videos WHERE day_label IS NOT NULL AND day_label != ''")
+        days_covered = cursor.fetchone()[0]
+        return {"total_videos": total_videos, "days_covered": days_covered}
+    finally:
+        connection.close()
+
+
+def get_daily_activity(db_path: str = "notescript.db") -> dict:
+    """Return a dict mapping date strings to count of videos processed that day."""
+    connection = sqlite3.connect(db_path)
+    try:
+        cursor = connection.cursor()
+        cursor.execute(
+            """
+            SELECT DATE(created_at) AS day, COUNT(*) AS cnt
+            FROM videos
+            GROUP BY DATE(created_at)
+            ORDER BY day ASC
+            """
+        )
+        rows = cursor.fetchall()
+        result = {}
+        for row in rows:
+            result[row[0]] = row[1]
+        return result
+    finally:
+        connection.close()
+
+
+def save_quiz_result(
+    quiz_id: str,
+    video_id: str,
+    total_questions: int,
+    score: int,
+    time_taken_seconds: int,
+    topic_weaknesses: str,
+    db_path: str = "notescript.db",
+) -> None:
+    """Save a completed quiz result to the quiz_attempts table."""
+    connection = sqlite3.connect(db_path)
+    try:
+        cursor = connection.cursor()
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS quiz_attempts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                quiz_id TEXT,
+                video_id TEXT,
+                total_questions INTEGER,
+                score INTEGER,
+                time_taken_seconds INTEGER,
+                topic_weaknesses TEXT,
+                created_at TEXT
+            )
+            """
+        )
+        created_at = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        cursor.execute(
+            """
+            INSERT INTO quiz_attempts
+            (quiz_id, video_id, total_questions, score, time_taken_seconds, topic_weaknesses, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (quiz_id, video_id, total_questions, score, time_taken_seconds, topic_weaknesses, created_at),
+        )
+        connection.commit()
+    finally:
+        connection.close()
+
+
+def get_streak_stats(db_path: str = "notescript.db") -> dict:
+    """Compute current and max daily learning streaks from video activity dates."""
+    import datetime
+    connection = sqlite3.connect(db_path)
+    try:
+        cursor = connection.cursor()
+        cursor.execute(
+            "SELECT DISTINCT DATE(created_at) FROM videos ORDER BY DATE(created_at) ASC"
+        )
+        rows = cursor.fetchall()
+        if not rows:
+            return {"current_streak": 0, "max_streak": 0}
+
+        dates = []
+        for row in rows:
+            dates.append(datetime.date.fromisoformat(row[0]))
+
+        # Compute max streak
+        max_streak = 1
+        current_run = 1
+        for i in range(1, len(dates)):
+            if (dates[i] - dates[i - 1]).days == 1:
+                current_run += 1
+                if current_run > max_streak:
+                    max_streak = current_run
+            else:
+                current_run = 1
+
+        # Current streak: count backwards from today
+        date_set = set()
+        for d in dates:
+            date_set.add(d)
+        today = datetime.date.today()
+        current_streak = 0
+        check = today
+        while check in date_set:
+            current_streak += 1
+            check -= datetime.timedelta(days=1)
+
+        return {"current_streak": current_streak, "max_streak": max_streak}
+    finally:
+        connection.close()
+
+
+def get_quiz_results(db_path: str = "notescript.db") -> list[dict]:
+    """Retrieve all quiz attempt results ordered by most recent first."""
+    connection = sqlite3.connect(db_path)
+    try:
+        cursor = connection.cursor()
+        cursor.execute(
+            """
+            SELECT quiz_id, video_id, total_questions, score, time_taken_seconds,
+                   topic_weaknesses, created_at
+            FROM quiz_attempts
+            ORDER BY id DESC
+            """
+        )
+        rows = cursor.fetchall()
+        result = []
+        for row in rows:
+            result.append(
+                {
+                    "quiz_id": row[0],
+                    "video_id": row[1],
+                    "total_questions": row[2],
+                    "score": row[3],
+                    "time_taken_seconds": row[4],
+                    "topic_weaknesses": row[5],
+                    "created_at": row[6],
+                }
+            )
+        return result
+    finally:
+        connection.close()
+
+
+def add_to_queue(day_num: int, video_url: str, title: str, db_path: str = "notescript.db") -> int:
+    """Add a new lecture video into the generation queue."""
+    connection = sqlite3.connect(db_path)
+    try:
+        cursor = connection.cursor()
+        now_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        cursor.execute(
+            """
+            INSERT INTO generation_queue (day_num, video_url, title, status, error_message, created_at, updated_at)
+            VALUES (?, ?, ?, 'pending', '', ?, ?)
+            """,
+            (day_num, video_url, title, now_str, now_str),
+        )
+        connection.commit()
+        return cursor.lastrowid
+    finally:
+        connection.close()
+
+
+def get_queue(db_path: str = "notescript.db") -> list[dict]:
+    """Retrieve all items in the generation queue ordered by day_num."""
+    connection = sqlite3.connect(db_path)
+    try:
+        cursor = connection.cursor()
+        cursor.execute(
+            """
+            SELECT id, day_num, video_url, title, status, error_message, created_at, updated_at
+            FROM generation_queue
+            ORDER BY day_num ASC, id ASC
+            """
+        )
+        rows = cursor.fetchall()
+        result = []
+        for row in rows:
+            result.append(
+                {
+                    "id": row[0],
+                    "day_num": row[1],
+                    "video_url": row[2],
+                    "title": row[3],
+                    "status": row[4],
+                    "error_message": row[5],
+                    "created_at": row[6],
+                    "updated_at": row[7],
+                }
+            )
+        return result
+    finally:
+        connection.close()
+
+
+def update_queue_status(queue_id: int, status: str, error_message: str = "", db_path: str = "notescript.db") -> None:
+    """Update status and optional error message for a queue item."""
+    connection = sqlite3.connect(db_path)
+    try:
+        cursor = connection.cursor()
+        now_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        cursor.execute(
+            """
+            UPDATE generation_queue
+            SET status = ?, error_message = ?, updated_at = ?
+            WHERE id = ?
+            """,
+            (status, error_message, now_str, queue_id),
+        )
+        connection.commit()
+    finally:
+        connection.close()
+
+
+def delete_queue_item(queue_id: int, db_path: str = "notescript.db") -> None:
+    """Delete an item from the generation queue by id."""
+    connection = sqlite3.connect(db_path)
+    try:
+        cursor = connection.cursor()
+        cursor.execute("DELETE FROM generation_queue WHERE id = ?", (queue_id,))
+        connection.commit()
+    finally:
+        connection.close()
+
+
+def clear_queue(only_completed: bool = False, db_path: str = "notescript.db") -> None:
+    """Clear items from the generation queue."""
+    connection = sqlite3.connect(db_path)
+    try:
+        cursor = connection.cursor()
+        if only_completed:
+            cursor.execute("DELETE FROM generation_queue WHERE status = 'completed'")
+        else:
+            cursor.execute("DELETE FROM generation_queue")
+        connection.commit()
+    finally:
+        connection.close()
+
+
+def get_queue_summary(db_path: str = "notescript.db") -> dict:
+    """Get counts of queue items grouped by status."""
+    connection = sqlite3.connect(db_path)
+    try:
+        cursor = connection.cursor()
+        cursor.execute("SELECT status, COUNT(*) FROM generation_queue GROUP BY status")
+        rows = cursor.fetchall()
+        counts = {
+            "total": 0,
+            "pending": 0,
+            "in_progress": 0,
+            "completed": 0,
+            "paused_quota": 0,
+            "failed": 0,
+        }
+        for row in rows:
+            st_name = row[0]
+            st_count = row[1]
+            if st_name in counts:
+                counts[st_name] = st_count
+            counts["total"] = counts["total"] + st_count
+        return counts
     finally:
         connection.close()
 

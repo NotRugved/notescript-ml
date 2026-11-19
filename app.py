@@ -2,6 +2,8 @@
 import streamlit as st
 from urllib.parse import quote
 from ui_components import apply_theme, show_sidebar_common
+from database import get_queue_summary
+from ai_processor import check_api_status
 
 st.set_page_config(page_title="NoteScript ML", page_icon="⚙️", layout="wide")
 apply_theme()
@@ -14,6 +16,27 @@ st.markdown("""
   <div class="ns-tagline">CampusX 100 Days of ML — notes that actually stick.</div>
 </div>
 """, unsafe_allow_html=True)
+
+# Active Batch Queue Banner if items are pending or paused
+queue_stats = get_queue_summary()
+if queue_stats.get("paused_quota", 0) > 0 or queue_stats.get("pending", 0) > 0:
+    api_check = check_api_status()
+    api_is_ready = api_check.get("available", False)
+    with st.container(border=True):
+        col_q_msg, col_q_btn = st.columns([3, 1])
+        with col_q_msg:
+            status_indicator = "🟢" if api_is_ready else "⏸️"
+            st.markdown(
+                f"{status_indicator} **Active Batch Queue:** {queue_stats.get('completed', 0)} completed, "
+                f"{queue_stats.get('paused_quota', 0)} paused (quota), {queue_stats.get('pending', 0)} pending."
+            )
+            if api_is_ready:
+                st.caption("✨ Gemini API is online and ready! You can continue generating notes now.")
+            else:
+                st.caption(f"⏳ API Status: {api_check.get('message', 'Quota reset pending')}")
+        with col_q_btn:
+            if st.button("⚡ Open Queue / Resume", type="primary", use_container_width=True):
+                st.switch_page("pages/1_Generator.py")
 
 # Terminal frame wrapping the factory animation
 st.markdown("""

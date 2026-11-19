@@ -383,3 +383,36 @@ Generate the revision pack following the Revision JSON contract."""
         revision_dict["interview_questions"] = []
 
     return revision_dict
+
+
+def check_api_status() -> dict:
+    """Check if the Gemini API is reachable and has quota available."""
+    api_key = os.getenv("GEMINI_API_KEY", "")
+    model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
+    if not api_key:
+        return {"available": False, "message": "Missing GEMINI_API_KEY"}
+
+    endpoint_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+    payload = {
+        "contents": [{"parts": [{"text": "hi"}]}],
+        "generationConfig": {"maxOutputTokens": 2},
+    }
+    serialized_payload = json.dumps(payload).encode("utf-8")
+    request = urllib.request.Request(
+        endpoint_url,
+        data=serialized_payload,
+        headers={"Content-Type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=12) as response:
+            if response.status == 200:
+                return {"available": True, "message": "API online and ready"}
+            return {"available": False, "message": f"Status code {response.status}"}
+    except urllib.error.HTTPError as http_error:
+        if http_error.code == 429:
+            return {"available": False, "message": "Daily quota limit currently active"}
+        if http_error.code == 503:
+            return {"available": False, "message": "Google Gemini Service busy/temporarily unavailable (503)"}
+        return {"available": False, "message": f"HTTP {http_error.code}"}
+    except Exception as exc:
+        return {"available": False, "message": f"Connection error: {exc}"}

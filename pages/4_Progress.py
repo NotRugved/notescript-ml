@@ -2,7 +2,7 @@
 import datetime
 import streamlit as st
 from ui_components import apply_theme, show_sidebar_common
-from database import get_progress_stats, get_daily_activity, get_quiz_results
+from database import get_progress_stats, get_daily_activity, get_quiz_results, get_streak_stats
 
 st.set_page_config(page_title="Progress - NoteScript ML", page_icon="📊", layout="wide")
 apply_theme()
@@ -12,14 +12,17 @@ st.markdown("# 📊 YOUR LEARNING PROGRESS")
 
 # ── High-level stats ──────────────────────────────────────────────────────────
 stats = get_progress_stats()
+streak = get_streak_stats()
 if not stats or stats.get("total_videos", 0) == 0:
     st.info("No progress yet. Generate notes for some lectures to get started!")
 else:
-    c1, c2, c3 = st.columns(3)
+    c1, c2, c3, c4, c5 = st.columns(5)
     c1.metric("Videos Processed", stats["total_videos"])
     c2.metric("Days Covered", stats["days_covered"])
     pct = min(int(stats["days_covered"] / 100.0 * 100), 100)
     c3.metric("100-Day Completion", f"{pct}%")
+    c4.metric("🔥 Current Streak", f"{streak['current_streak']} days")
+    c5.metric("⚡ Max Streak", f"{streak['max_streak']} days")
     st.progress(min(stats["days_covered"] / 100.0, 1.0), text=f"{pct}% of 100 Days of ML")
 
 st.divider()
