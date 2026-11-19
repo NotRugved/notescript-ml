@@ -41,49 +41,6 @@ st.progress(min(days_covered / 100.0, 1.0), text=f"{completion_pct}% of the 100 
 
 st.divider()
 
-# ── 100 Days Curriculum Phases ───────────────────────────────────────────────
-st.markdown("### 🗺️ Curriculum Phases")
-
-curriculum_phases = [
-    {
-        "phase": "Phase 1: Foundations & Exploratory Data Analysis",
-        "range": "Days 1 – 20",
-        "topics": "Python for ML, NumPy, Pandas, Data Cleaning, Univariate & Bivariate EDA, SQL & CSV Handling",
-    },
-    {
-        "phase": "Phase 2: Feature Engineering & Data Preprocessing",
-        "range": "Days 21 – 40",
-        "topics": "Imputation, Encoding, Feature Scaling, Outlier Detection, Function Transformers, Pipelines",
-    },
-    {
-        "phase": "Phase 3: Core Supervised Learning Algorithms",
-        "range": "Days 41 – 70",
-        "topics": "Simple & Multiple Linear Regression, Gradient Descent, Logistic Regression, Decision Trees, SVM, KNN",
-    },
-    {
-        "phase": "Phase 4: Ensemble Techniques & Model Evaluation",
-        "range": "Days 71 – 85",
-        "topics": "Bagging, Random Forests, Boosting (AdaBoost, Gradient Boost, XGBoost), Hyperparameter Tuning, Metrics",
-    },
-    {
-        "phase": "Phase 5: Unsupervised Learning & Neural Networks",
-        "range": "Days 86 – 100",
-        "topics": "K-Means, Hierarchical Clustering, PCA, t-SNE, Perceptron, Neural Networks Architecture, Production Deployment",
-    },
-]
-
-col_p1, col_p2 = st.columns(2)
-for idx in range(len(curriculum_phases)):
-    phase_data = curriculum_phases[idx]
-    target_col = col_p1 if idx % 2 == 0 else col_p2
-    with target_col:
-        with st.container(border=True):
-            st.markdown(f"**{phase_data['phase']}**")
-            st.caption(f"🗓️ {phase_data['range']}")
-            st.write(phase_data["topics"])
-
-st.divider()
-
 # ── Indexed Lectures Directory ───────────────────────────────────────────────
 st.markdown("### 📚 Ready Lectures Archive")
 
