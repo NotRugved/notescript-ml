@@ -72,7 +72,7 @@ No markdown fences, no extra commentary."""
 def _execute_gemini_request(payload: dict, timeout_seconds: int = 120) -> str:
     """Send a direct JSON payload to the Gemini generateContent REST endpoint."""
     api_key = os.getenv("GEMINI_API_KEY", "")
-    model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
+    model = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY environment variable is missing.")
 
@@ -388,7 +388,7 @@ Generate the revision pack following the Revision JSON contract."""
 def check_api_status() -> dict:
     """Check if the Gemini API is reachable and has quota available."""
     api_key = os.getenv("GEMINI_API_KEY", "")
-    model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
+    model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
     if not api_key:
         return {"available": False, "message": "Missing GEMINI_API_KEY"}
 
@@ -406,13 +406,13 @@ def check_api_status() -> dict:
     try:
         with urllib.request.urlopen(request, timeout=12) as response:
             if response.status == 200:
-                return {"available": True, "message": f"API online and ready ({model})"}
+                return {"available": True, "message": "API online and ready"}
             return {"available": False, "message": f"Status code {response.status}"}
     except urllib.error.HTTPError as http_error:
         if http_error.code == 429:
-            return {"available": False, "message": f"Daily quota limit currently active for {model}"}
+            return {"available": False, "message": "Daily quota limit currently active"}
         if http_error.code == 503:
-            return {"available": False, "message": f"Google servers busy for {model} (503). Try gemini-3.5-flash-lite."}
+            return {"available": False, "message": "Google Gemini Service busy/temporarily unavailable (503)"}
         return {"available": False, "message": f"HTTP {http_error.code}"}
     except Exception as exc:
         return {"available": False, "message": f"Connection error: {exc}"}
