@@ -20,6 +20,7 @@ from database import (
     update_queue_status,
 )
 from ai_processor import check_api_status
+from github_sync import push_db_to_github
 
 st.set_page_config(page_title="Generator - NoteScript ML", page_icon="🚀", layout="wide")
 apply_theme()
@@ -115,6 +116,8 @@ with tab_single:
                 status_box.update(label="⏸️ Partial save: daily quota hit. Resume tomorrow!", state="complete")
             else:
                 status_box.update(label="✅ Success!", state="complete")
+            # Push updated database to GitHub for cross-device persistence
+            push_db_to_github()
             st.switch_page("pages/3_Notes.py")
         except Exception as exc:
             status_box.update(label=f"❌ Error: {exc}", state="error")
@@ -136,15 +139,23 @@ with tab_batch:
     api_ok = api_check.get("available", False)
     api_msg = api_check.get("message", "")
 
-    status_cols = st.columns([3, 1])
+    status_cols = st.columns([2, 1, 1])
     with status_cols[0]:
         if api_ok:
             st.success(f"🟢 **API Status:** {api_msg}")
         else:
             st.warning(f"🟡 **API Status:** {api_msg}")
     with status_cols[1]:
-        if st.button("🔄 Check API Status", key="btn_check_api"):
+        if st.button("🔄 Check API Status", key="btn_check_api", use_container_width=True):
             st.rerun()
+    with status_cols[2]:
+        if st.button("☁️ Sync to GitHub", key="btn_manual_sync_gh", use_container_width=True):
+            with st.spinner("Syncing to GitHub..."):
+                sync_ok, sync_msg = push_db_to_github()
+                if sync_ok:
+                    st.success("✅ Synced to GitHub!")
+                else:
+                    st.info(f"ℹ️ {sync_msg}")
 
     st.divider()
 
@@ -292,12 +303,16 @@ with tab_batch:
                     processed_count += 1
 
         if quota_stopped:
+            # Sync partial progress to GitHub
+            push_db_to_github()
             st.warning(
                 "⏸️ **Batch queue paused due to Gemini daily quota limit.**\n\n"
                 "All completed notes and partial video segments are safely stored in your database. "
                 "Next time you open the app (or when the API resets), click **Resume Queue** to continue!"
             )
         else:
+            # Sync full batch completion to GitHub
+            push_db_to_github()
             batch_status.update(label="🎉 Batch processing finished!", state="complete")
             st.success("All queued lectures have been successfully processed!")
             st.rerun()

@@ -162,7 +162,7 @@ print("\n── 5. Syntax check (py_compile) ──")
 
 py_files = [
     "app.py", "database.py", "ai_processor.py", "pipeline.py",
-    "exports.py", "yt_extractor.py", "ui_components.py",
+    "exports.py", "yt_extractor.py", "ui_components.py", "github_sync.py",
     "pages/1_Generator.py", "pages/2_Library.py", "pages/3_Notes.py",
     "pages/4_Progress.py", "pages/5_Quiz.py",
 ]
@@ -179,7 +179,7 @@ for f in py_files:
 # ── 6. IMPORT CHAIN ───────────────────────────────────────────────────────────
 print("\n── 6. Import chain ──")
 
-for mod in ["database", "pipeline", "exports", "yt_extractor", "ui_components"]:
+for mod in ["database", "pipeline", "exports", "yt_extractor", "ui_components", "github_sync"]:
     try:
         importlib.import_module(mod)
         report(f"import {mod}", True)
@@ -207,6 +207,16 @@ report("verify_admin_code accepts valid env code", ui_components.verify_admin_co
 report("verify_admin_code rejects incorrect code", ui_components.verify_admin_code("wrong_passcode_xyz") is False)
 report("verify_admin_code rejects empty code", ui_components.verify_admin_code("") is False)
 report("is_admin_authenticated defaults to False", ui_components.is_admin_authenticated() is False)
+
+# ── 9. GITHUB REPOSITORY SYNC ─────────────────────────────────────────────────
+print("\n── 9. GitHub repository sync ──")
+
+import github_sync
+
+repo_slug = github_sync.get_github_repo()
+report("get_github_repo configured", bool(repo_slug and "/" in repo_slug), repo_slug)
+remote_sha = github_sync.get_remote_file_sha("notescript.db")
+report("get_remote_file_sha reads remote notescript.db", bool(remote_sha and len(remote_sha) == 40), f"sha: {remote_sha[:10]}…")
 
 # ── CLEANUP & SUMMARY ─────────────────────────────────────────────────────────
 if os.path.exists(TEST_DB):

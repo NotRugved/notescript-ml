@@ -91,6 +91,17 @@ def init_db(db_path: str = "notescript.db") -> None:
             """
         )
         connection.commit()
+
+        # If database is completely empty on startup, attempt to hydrate from GitHub
+        if db_path == "notescript.db":
+            cursor.execute("SELECT COUNT(*) FROM videos")
+            video_cnt = cursor.fetchone()[0]
+            if video_cnt == 0:
+                try:
+                    from github_sync import pull_db_from_github
+                    pull_db_from_github(db_path)
+                except Exception:
+                    pass
     finally:
         connection.close()
 
