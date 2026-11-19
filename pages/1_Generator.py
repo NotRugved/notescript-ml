@@ -1,7 +1,7 @@
 """Generator Page — Single Lecture and Multi-Day Batch Queue."""
 import os
 import streamlit as st
-from ui_components import apply_theme, show_sidebar_common
+from ui_components import apply_theme, render_admin_bar, render_admin_gate, show_sidebar_common
 from yt_extractor import (
     find_day_candidates,
     get_video_id,
@@ -25,6 +25,11 @@ st.set_page_config(page_title="Generator - NoteScript ML", page_icon="🚀", lay
 apply_theme()
 show_sidebar_common()
 
+# Enforce Admin Gatekeeper
+if not render_admin_gate():
+    st.stop()
+
+render_admin_bar()
 st.header("🚀 Note Generator")
 
 # Global Config Popover in the header row

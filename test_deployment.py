@@ -195,6 +195,19 @@ if os.path.exists("ui/theme.css"):
         css = f.read()
     report("ui/theme.css non-empty", len(css) > 100)
 
+# ── 8. ADMIN ACCESS CONTROL ───────────────────────────────────────────────────
+print("\n── 8. Admin access control ──")
+
+import ui_components
+from dotenv import load_dotenv
+load_dotenv()
+
+active_code = os.getenv("ADMIN_ACCESS_CODE", "")
+report("verify_admin_code accepts valid env code", ui_components.verify_admin_code(active_code) is True)
+report("verify_admin_code rejects incorrect code", ui_components.verify_admin_code("wrong_passcode_xyz") is False)
+report("verify_admin_code rejects empty code", ui_components.verify_admin_code("") is False)
+report("is_admin_authenticated defaults to False", ui_components.is_admin_authenticated() is False)
+
 # ── CLEANUP & SUMMARY ─────────────────────────────────────────────────────────
 if os.path.exists(TEST_DB):
     os.remove(TEST_DB)
