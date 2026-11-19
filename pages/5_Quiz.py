@@ -4,7 +4,7 @@ import uuid
 import datetime
 import streamlit as st
 from ui_components import apply_theme, show_sidebar_common
-from database import list_videos, save_quiz_result
+from database import list_videos
 from pipeline import load_cached_result
 
 st.set_page_config(page_title="Quiz - NoteScript ML", page_icon="🎯", layout="wide")
@@ -131,28 +131,26 @@ if st.session_state["quiz_done"]:
         for t in wrong_topics:
             st.markdown(f"- {t}")
 
-    # Save to DB
-    quiz_id = st.session_state["quiz_id"]
-    weaknesses_str = ",".join(wrong_topics)
-    try:
-        save_quiz_result(
-            quiz_id=quiz_id,
-            video_id=st.session_state["quiz_source_vid"],
-            total_questions=total,
-            score=score,
-            time_taken_seconds=elapsed,
-            topic_weaknesses=weaknesses_str,
-        )
-    except Exception:
-        pass  # shortcut: silently skip DB errors; worst case stats are missing
-
-    if st.button("🔄 Take Another Quiz"):
-        for key in ["quiz_active", "quiz_questions", "quiz_q_index", "quiz_answers",
-                    "quiz_start_time", "quiz_q_start_time", "quiz_done", "quiz_id",
-                    "quiz_source_vid"]:
-            if key in st.session_state:
-                del st.session_state[key]
-        st.rerun()
+    col_act1, col_act2 = st.columns([1, 1])
+    with col_act1:
+        if st.button("🔄 Take Another Quiz", type="primary", use_container_width=True):
+            for key in [
+                "quiz_active",
+                "quiz_questions",
+                "quiz_q_index",
+                "quiz_answers",
+                "quiz_start_time",
+                "quiz_q_start_time",
+                "quiz_done",
+                "quiz_id",
+                "quiz_source_vid",
+            ]:
+                if key in st.session_state:
+                    del st.session_state[key]
+            st.rerun()
+    with col_act2:
+        if st.button("📚 Browse More Lectures", use_container_width=True):
+            st.switch_page("pages/2_Library.py")
     st.stop()
 
 

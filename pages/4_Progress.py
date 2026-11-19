@@ -1,223 +1,120 @@
-"""Progress Dashboard Page — heatmap + quiz history."""
-import datetime
+"""Course Roadmap & Curriculum Coverage Dashboard for NoteScript ML."""
 import streamlit as st
 from ui_components import apply_theme, show_sidebar_common
-from database import get_progress_stats, get_daily_activity, get_quiz_results, get_streak_stats
+from database import get_progress_stats, list_videos
+from pipeline import load_cached_result
+from yt_extractor import format_time
 
-st.set_page_config(page_title="Progress - NoteScript ML", page_icon="📊", layout="wide")
+st.set_page_config(page_title="Course Roadmap - NoteScript ML", page_icon="📊", layout="wide")
 apply_theme()
 show_sidebar_common()
 
-st.markdown("# 📊 YOUR LEARNING PROGRESS")
+st.markdown("# 📊 100 DAYS OF ML — CURRICULUM ROADMAP")
+st.caption(
+    "Track the complete CampusX '100 Days of Machine Learning' curriculum archive. "
+    "Every indexed lecture contains detailed Hinglish notes, intuition, formulas, runnable Python code, and revision packs."
+)
 
-# ── High-level stats ──────────────────────────────────────────────────────────
+# ── High-Level Course Metrics ────────────────────────────────────────────────
 stats = get_progress_stats()
-streak = get_streak_stats()
-if not stats or stats.get("total_videos", 0) == 0:
-    st.info("No progress yet. Generate notes for some lectures to get started!")
-else:
-    c1, c2, c3, c4, c5 = st.columns(5)
-    c1.metric("Videos Processed", stats["total_videos"])
-    c2.metric("Days Covered", stats["days_covered"])
-    pct = min(int(stats["days_covered"] / 100.0 * 100), 100)
-    c3.metric("100-Day Completion", f"{pct}%")
-    c4.metric("🔥 Current Streak", f"{streak['current_streak']} days")
-    c5.metric("⚡ Max Streak", f"{streak['max_streak']} days")
-    st.progress(min(stats["days_covered"] / 100.0, 1.0), text=f"{pct}% of 100 Days of ML")
+all_videos = list_videos()
+
+total_vids = stats.get("total_videos", 0) if stats else len(all_videos)
+days_covered = stats.get("days_covered", 0) if stats else 0
+completion_pct = min(int(days_covered / 100.0 * 100), 100)
+
+total_duration_sec = 0
+for v in all_videos:
+    total_duration_sec += int(v.get("duration_seconds", 0) or 0)
+
+dur_hours = total_duration_sec // 3600
+dur_mins = (total_duration_sec % 3600) // 60
+duration_display = f"{dur_hours}h {dur_mins}m" if dur_hours > 0 else f"{dur_mins}m"
+
+m1, m2, m3, m4 = st.columns(4)
+m1.metric("Indexed Lectures", total_vids)
+m2.metric("Days Covered", f"{days_covered} / 100")
+m3.metric("Curriculum Completion", f"{completion_pct}%")
+m4.metric("Study Content Duration", duration_display)
+
+st.progress(min(days_covered / 100.0, 1.0), text=f"{completion_pct}% of the 100 Days of Machine Learning curriculum ready")
 
 st.divider()
 
-# ── GitHub-style activity heatmap ─────────────────────────────────────────────
-st.markdown("### 🟥 Daily Activity Heatmap")
+# ── 100 Days Curriculum Phases ───────────────────────────────────────────────
+st.markdown("### 🗺️ Curriculum Phases")
 
-activity = get_daily_activity()
+curriculum_phases = [
+    {
+        "phase": "Phase 1: Foundations & Exploratory Data Analysis",
+        "range": "Days 1 – 20",
+        "topics": "Python for ML, NumPy, Pandas, Data Cleaning, Univariate & Bivariate EDA, SQL & CSV Handling",
+    },
+    {
+        "phase": "Phase 2: Feature Engineering & Data Preprocessing",
+        "range": "Days 21 – 40",
+        "topics": "Imputation, Encoding, Feature Scaling, Outlier Detection, Function Transformers, Pipelines",
+    },
+    {
+        "phase": "Phase 3: Core Supervised Learning Algorithms",
+        "range": "Days 41 – 70",
+        "topics": "Simple & Multiple Linear Regression, Gradient Descent, Logistic Regression, Decision Trees, SVM, KNN",
+    },
+    {
+        "phase": "Phase 4: Ensemble Techniques & Model Evaluation",
+        "range": "Days 71 – 85",
+        "topics": "Bagging, Random Forests, Boosting (AdaBoost, Gradient Boost, XGBoost), Hyperparameter Tuning, Metrics",
+    },
+    {
+        "phase": "Phase 5: Unsupervised Learning & Neural Networks",
+        "range": "Days 86 – 100",
+        "topics": "K-Means, Hierarchical Clustering, PCA, t-SNE, Perceptron, Neural Networks Architecture, Production Deployment",
+    },
+]
 
-# Build a 52-week × 7-day grid anchored to today
-today = datetime.date.today()
-# Step back to the most recent Monday so the grid starts on Monday
-days_since_monday = today.weekday()          # Mon=0, Sun=6
-grid_end = today
-grid_start = grid_end - datetime.timedelta(weeks=52) + datetime.timedelta(days=1)
-# Align start to Monday
-while grid_start.weekday() != 0:
-    grid_start -= datetime.timedelta(days=1)
-
-# Collect all dates into a dict for fast lookup
-date_counts = {}
-current = grid_start
-while current <= grid_end:
-    key = current.strftime("%Y-%m-%d")
-    date_counts[key] = activity.get(key, 0)
-    current += datetime.timedelta(days=1)
-
-# Find max count for colour scaling
-max_count = 1
-for v in date_counts.values():
-    if v > max_count:
-        max_count = v
-
-def _cell_colour(count: int) -> str:
-    """Return hex colour for a given count (3-tier: dark → amber → red)."""
-    if count == 0:
-        return "#1a1a1a"
-    intensity = count / max_count
-    if intensity < 0.4:
-        return "#5a2800"       # dim amber-brown — low
-    if intensity < 0.75:
-        return "#ffb000"       # amber — medium
-    return "#ff2b2b"           # vibrant red — high
-
-# Build columns: collect weeks
-weeks = []
-week = []
-current = grid_start
-while current <= grid_end:
-    week.append(current)
-    if current.weekday() == 6:   # Sunday — end of week
-        weeks.append(week)
-        week = []
-    current += datetime.timedelta(days=1)
-if week:
-    weeks.append(week)
-
-# Build month labels row
-month_labels_html = "<div style='display:flex;gap:3px;margin-left:28px;margin-bottom:4px;'>"
-prev_month = None
-for week_days in weeks:
-    first_day = week_days[0]
-    if first_day.month != prev_month:
-        label = first_day.strftime("%b")
-        prev_month = first_day.month
-        month_labels_html += f"<div style='width:14px;font-size:9px;color:#888;'>{label}</div>"
-    else:
-        month_labels_html += "<div style='width:14px;'></div>"
-month_labels_html += "</div>"
-
-# Build day-of-week labels + grid
-day_labels = ["M", "T", "W", "T", "F", "S", "S"]
-grid_html = "<div style='display:flex;gap:3px;'>"
-
-# Day-of-week column
-grid_html += "<div style='display:flex;flex-direction:column;gap:3px;margin-right:4px;'>"
-for lbl in day_labels:
-    grid_html += f"<div style='height:14px;width:14px;font-size:9px;color:#888;line-height:14px;'>{lbl}</div>"
-grid_html += "</div>"
-
-# Week columns
-for week_days in weeks:
-    grid_html += "<div style='display:flex;flex-direction:column;gap:3px;'>"
-    # Pad top if first week doesn't start on Monday
-    if len(week_days) < 7:
-        pad = week_days[0].weekday()
-        for _ in range(pad):
-            grid_html += "<div style='width:14px;height:14px;'></div>"
-    for day in week_days:
-        key = day.strftime("%Y-%m-%d")
-        count = date_counts.get(key, 0)
-        colour = _cell_colour(count)
-        tip = f"{day.strftime('%b %d')}: {count} video(s)"
-        grid_html += (
-            f"<div title='{tip}' style='width:14px;height:14px;background:{colour};"
-            f"border-radius:2px;transition:transform 0.1s ease,box-shadow 0.1s ease;"
-            f"cursor:pointer;' "
-            f"onmouseover=\"this.style.transform='scale(1.3)';this.style.boxShadow='0 0 6px {colour}';\" "
-            f"onmouseout=\"this.style.transform='scale(1)';this.style.boxShadow='none';\""
-            f"></div>"
-        )
-    grid_html += "</div>"
-
-grid_html += "</div>"
-
-legend_html = (
-    "<div style='display:flex;align-items:center;gap:6px;margin-top:10px;"
-    "font-size:11px;color:#666;font-family:Space Mono,monospace;'>"
-    "<span>LESS</span>"
-    "<div style='width:12px;height:12px;background:#1a1a1a;border:1px solid #333;'></div>"
-    "<div style='width:12px;height:12px;background:#5a2800;'></div>"
-    "<div style='width:12px;height:12px;background:#ffb000;'></div>"
-    "<div style='width:12px;height:12px;background:#ff2b2b;'></div>"
-    "<span>MORE</span>"
-    "</div>"
-)
-
-full_heatmap = (
-    "<div style='background:#111;padding:16px;border:2px solid #fff;"
-    "box-shadow:4px 4px 0 #ff2b2b;display:inline-block;'>"
-    + month_labels_html
-    + grid_html
-    + legend_html
-    + "</div>"
-)
-
-st.markdown(full_heatmap, unsafe_allow_html=True)
+col_p1, col_p2 = st.columns(2)
+for idx in range(len(curriculum_phases)):
+    phase_data = curriculum_phases[idx]
+    target_col = col_p1 if idx % 2 == 0 else col_p2
+    with target_col:
+        with st.container(border=True):
+            st.markdown(f"**{phase_data['phase']}**")
+            st.caption(f"🗓️ {phase_data['range']}")
+            st.write(phase_data["topics"])
 
 st.divider()
 
-# ── Quiz history ───────────────────────────────────────────────────────────────
-st.markdown("### 🎯 Quiz History")
+# ── Indexed Lectures Directory ───────────────────────────────────────────────
+st.markdown("### 📚 Ready Lectures Archive")
 
-quiz_results = get_quiz_results()
-if not quiz_results:
-    st.info("No quizzes taken yet. Head to the Quiz page to test yourself!")
+if len(all_videos) == 0:
+    st.info("No lecture notes indexed yet. Check back soon or request notes from the administrator!")
 else:
-    # Aggregate stats
-    total_quizzes = len(quiz_results)
-    total_score = 0
-    total_possible = 0
-    best_pct = 0
-    weakness_counts = {}
+    st.write(f"Showing **{len(all_videos)}** complete lecture notes ready for study and review:")
 
-    for r in quiz_results:
-        sc = r.get("score", 0)
-        tot = r.get("total_questions", 1) or 1
-        total_score += sc
-        total_possible += tot
-        pct = int(sc / tot * 100)
-        if pct > best_pct:
-            best_pct = pct
-        weaknesses_str = r.get("topic_weaknesses", "") or ""
-        for topic in weaknesses_str.split(","):
-            topic = topic.strip()
-            if topic:
-                weakness_counts[topic] = weakness_counts.get(topic, 0) + 1
+    for v in all_videos:
+        vid_id = v.get("video_id", "")
+        title = v.get("title", "Untitled Lecture")
+        day_lbl = v.get("day_label", "")
+        sec = int(v.get("duration_seconds", 0) or 0)
+        dur_str = format_time(sec) if sec > 0 else "N/A"
 
-    avg_pct = int(total_score / total_possible * 100) if total_possible > 0 else 0
-
-    qa, qb, qc = st.columns(3)
-    qa.metric("Total Quizzes", total_quizzes)
-    qb.metric("Best Score", f"{best_pct}%")
-    qc.metric("Average Score", f"{avg_pct}%")
-
-    if weakness_counts:
-        st.markdown("#### 🔴 Topic Weaknesses")
-        # Sort by frequency descending
-        sorted_topics = []
-        for topic, count in weakness_counts.items():
-            sorted_topics.append((count, topic))
-        sorted_topics.sort(reverse=True)
-        for count, topic in sorted_topics[:10]:
-            st.markdown(f"- **{topic}** — wrong {count}×")
-
-    st.markdown("#### 📋 Recent Attempts")
-    for r in quiz_results[:20]:
-        sc = r.get("score", 0)
-        tot = r.get("total_questions", 1) or 1
-        pct = int(sc / tot * 100)
-        secs = r.get("time_taken_seconds", 0) or 0
-        mins = secs // 60
-        rem_secs = secs % 60
-        time_str = f"{mins}m {rem_secs}s" if mins > 0 else f"{secs}s"
-        date_str = (r.get("created_at") or "")[:10]
-        vid_id = r.get("video_id", "")[:20]
-        colour = "#ff2b2b" if pct < 60 else ("#e6a817" if pct < 80 else "#22c55e")
-        card = (
-            f"<div style='border:2px solid #fff;padding:12px 16px;margin-bottom:8px;"
-            f"box-shadow:3px 3px 0 #ff2b2b;background:#111;'>"
-            f"<span style='font-family:Space Mono,monospace;font-size:0.85rem;color:#aaa;'>"
-            f"{date_str} · {vid_id}</span><br>"
-            f"<span style='font-size:1.4rem;font-weight:700;color:{colour};'>{sc}/{tot}</span>"
-            f"<span style='color:#aaa;'> ({pct}%)</span>"
-            f"<span style='float:right;color:#888;font-size:0.85rem;'>⏱ {time_str}</span>"
-            f"</div>"
-        )
-        st.markdown(card, unsafe_allow_html=True)
+        with st.container(border=True):
+            c_info, c_actions = st.columns([4, 2])
+            with c_info:
+                if day_lbl:
+                    st.markdown(f"`{day_lbl}` **{title}**")
+                else:
+                    st.markdown(f"**{title}**")
+                st.caption(f"⏱ Video Duration: {dur_str} · ✅ Includes: Theory, Intuition, Code, Formulas, Quiz")
+            with c_actions:
+                sub_c1, sub_c2 = st.columns(2)
+                with sub_c1:
+                    if st.button("📖 Notes", key=f"btn_notes_{vid_id}", use_container_width=True):
+                        cached_result = load_cached_result(vid_id)
+                        if cached_result:
+                            st.session_state["pipeline_result"] = cached_result
+                            st.switch_page("pages/3_Notes.py")
+                with sub_c2:
+                    if st.button("🎯 Quiz", key=f"btn_quiz_{vid_id}", use_container_width=True):
+                        st.switch_page("pages/5_Quiz.py")
