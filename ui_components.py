@@ -18,3 +18,4 @@ def show_sidebar_common():
     st.sidebar.page_link("pages/1_Generator.py", label="🚀 Generator")
     st.sidebar.page_link("pages/2_Library.py", label="📚 Library")
     st.sidebar.page_link("pages/4_Progress.py", label="📊 Progress")
+    st.sidebar.page_link("pages/5_Quiz.py", label="🎯 Quiz")
