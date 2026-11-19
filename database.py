@@ -587,11 +587,30 @@ def get_quiz_results(db_path: str = "notescript.db") -> list[dict]:
         connection.close()
 
 
+def _ensure_queue_table(cursor: sqlite3.Cursor) -> None:
+    """Ensure generation_queue table exists before operations."""
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS generation_queue (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            day_num INTEGER,
+            video_url TEXT,
+            title TEXT,
+            status TEXT,
+            error_message TEXT,
+            created_at TEXT,
+            updated_at TEXT
+        )
+        """
+    )
+
+
 def add_to_queue(day_num: int, video_url: str, title: str, db_path: str = "notescript.db") -> int:
     """Add a new lecture video into the generation queue."""
     connection = sqlite3.connect(db_path)
     try:
         cursor = connection.cursor()
+        _ensure_queue_table(cursor)
         now_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         cursor.execute(
             """
@@ -611,6 +630,7 @@ def get_queue(db_path: str = "notescript.db") -> list[dict]:
     connection = sqlite3.connect(db_path)
     try:
         cursor = connection.cursor()
+        _ensure_queue_table(cursor)
         cursor.execute(
             """
             SELECT id, day_num, video_url, title, status, error_message, created_at, updated_at
@@ -643,6 +663,7 @@ def update_queue_status(queue_id: int, status: str, error_message: str = "", db_
     connection = sqlite3.connect(db_path)
     try:
         cursor = connection.cursor()
+        _ensure_queue_table(cursor)
         now_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         cursor.execute(
             """
@@ -662,6 +683,7 @@ def delete_queue_item(queue_id: int, db_path: str = "notescript.db") -> None:
     connection = sqlite3.connect(db_path)
     try:
         cursor = connection.cursor()
+        _ensure_queue_table(cursor)
         cursor.execute("DELETE FROM generation_queue WHERE id = ?", (queue_id,))
         connection.commit()
     finally:
@@ -673,6 +695,7 @@ def clear_queue(only_completed: bool = False, db_path: str = "notescript.db") ->
     connection = sqlite3.connect(db_path)
     try:
         cursor = connection.cursor()
+        _ensure_queue_table(cursor)
         if only_completed:
             cursor.execute("DELETE FROM generation_queue WHERE status = 'completed'")
         else:
@@ -687,6 +710,7 @@ def get_queue_summary(db_path: str = "notescript.db") -> dict:
     connection = sqlite3.connect(db_path)
     try:
         cursor = connection.cursor()
+        _ensure_queue_table(cursor)
         cursor.execute("SELECT status, COUNT(*) FROM generation_queue GROUP BY status")
         rows = cursor.fetchall()
         counts = {

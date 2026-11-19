@@ -2,8 +2,11 @@
 import streamlit as st
 from urllib.parse import quote
 from ui_components import apply_theme, show_sidebar_common
-from database import get_queue_summary
+from database import init_db, get_queue_summary
 from ai_processor import check_api_status
+
+# Ensure all database tables exist on startup
+init_db()
 
 st.set_page_config(page_title="NoteScript ML", page_icon="⚙️", layout="wide")
 apply_theme()
