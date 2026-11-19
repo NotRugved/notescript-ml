@@ -54,17 +54,15 @@ for v in date_counts.values():
         max_count = v
 
 def _cell_colour(count: int) -> str:
-    """Return hex colour for a given count."""
+    """Return hex colour for a given count (3-tier: dark → amber → red)."""
     if count == 0:
         return "#1a1a1a"
     intensity = count / max_count
-    if intensity < 0.25:
-        return "#4d0000"
-    if intensity < 0.5:
-        return "#800000"
+    if intensity < 0.4:
+        return "#5a2800"       # dim amber-brown — low
     if intensity < 0.75:
-        return "#cc0000"
-    return "#ff2b2b"
+        return "#ffb000"       # amber — medium
+    return "#ff2b2b"           # vibrant red — high
 
 # Build columns: collect weeks
 weeks = []
@@ -117,21 +115,25 @@ for week_days in weeks:
         tip = f"{day.strftime('%b %d')}: {count} video(s)"
         grid_html += (
             f"<div title='{tip}' style='width:14px;height:14px;background:{colour};"
-            f"border-radius:2px;'></div>"
+            f"border-radius:2px;transition:transform 0.1s ease,box-shadow 0.1s ease;"
+            f"cursor:pointer;' "
+            f"onmouseover=\"this.style.transform='scale(1.3)';this.style.boxShadow='0 0 6px {colour}';\" "
+            f"onmouseout=\"this.style.transform='scale(1)';this.style.boxShadow='none';\""
+            f"></div>"
         )
     grid_html += "</div>"
 
 grid_html += "</div>"
 
 legend_html = (
-    "<div style='display:flex;align-items:center;gap:6px;margin-top:8px;font-size:11px;color:#888;'>"
-    "<span>Less</span>"
-    "<div style='width:12px;height:12px;background:#1a1a1a;border-radius:2px;'></div>"
-    "<div style='width:12px;height:12px;background:#4d0000;border-radius:2px;'></div>"
-    "<div style='width:12px;height:12px;background:#800000;border-radius:2px;'></div>"
-    "<div style='width:12px;height:12px;background:#cc0000;border-radius:2px;'></div>"
-    "<div style='width:12px;height:12px;background:#ff2b2b;border-radius:2px;'></div>"
-    "<span>More</span>"
+    "<div style='display:flex;align-items:center;gap:6px;margin-top:10px;"
+    "font-size:11px;color:#666;font-family:Space Mono,monospace;'>"
+    "<span>LESS</span>"
+    "<div style='width:12px;height:12px;background:#1a1a1a;border:1px solid #333;'></div>"
+    "<div style='width:12px;height:12px;background:#5a2800;'></div>"
+    "<div style='width:12px;height:12px;background:#ffb000;'></div>"
+    "<div style='width:12px;height:12px;background:#ff2b2b;'></div>"
+    "<span>MORE</span>"
     "</div>"
 )
 

@@ -93,11 +93,11 @@ if st.session_state["quiz_done"]:
     colour = "#ff2b2b" if pct < 60 else ("#e6a817" if pct < 80 else "#22c55e")
 
     st.markdown(
-        f"<div style='border:2px solid #fff;padding:24px;box-shadow:4px 4px 0 #ff2b2b;"
-        f"background:#111;text-align:center;'>"
-        f"<div style='font-family:Space Mono,monospace;font-size:3rem;font-weight:700;"
-        f"color:{colour};'>{score}/{total}</div>"
-        f"<div style='font-size:1.2rem;color:#aaa;'>{pct}% · {_fmt_time(elapsed)}</div>"
+        f"<div style='border:2px solid #fff;padding:32px;box-shadow:6px 6px 0 #ff2b2b;"
+        f"background:#1a1a1a;text-align:center;animation:card-pop 0.4s ease both;'>"
+        f"<div class='ns-score' style='color:{colour};'>{score}/{total}</div>"
+        f"<div style='font-family:Space Mono,monospace;font-size:1rem;color:#aaa;"
+        f"margin-top:8px;letter-spacing:0.06em;'>{pct}% · ⏱ {_fmt_time(elapsed)}</div>"
         f"</div>",
         unsafe_allow_html=True,
     )
@@ -190,11 +190,10 @@ if st.session_state["quiz_active"]:
 
     # Question card
     st.markdown(
-        f"<div style='border:2px solid #fff;padding:16px 20px;background:#111;"
-        f"box-shadow:4px 4px 0 #ff2b2b;margin-bottom:16px;'>"
-        f"<div style='font-family:Space Mono,monospace;font-size:0.8rem;color:#888;"
-        f"text-transform:uppercase;'>Q{idx + 1}</div>"
-        f"<div style='font-size:1.1rem;margin-top:8px;'>{q.get('question', '')}</div>"
+        f"<div class='ns-quiz-card'>"
+        f"<div style='font-family:Space Mono,monospace;font-size:0.75rem;color:#666;"
+        f"text-transform:uppercase;letter-spacing:0.08em;'>Question {idx + 1} / {total}</div>"
+        f"<div style='font-size:1.05rem;margin-top:10px;line-height:1.5;'>{q.get('question', '')}</div>"
         f"</div>",
         unsafe_allow_html=True,
     )

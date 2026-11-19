@@ -1,81 +1,484 @@
-/* NoteScript ML — Miles Morales Neo-Brutalist Theme */
-@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Kalam:wght@400;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap');
+/* ═══════════════════════════════════════════════════════════════════════════
+   NoteScript ML — Miles Morales Neo-Brutalist Theme  v2
+   Palette: #050505 bg · #1a1a1a card · #ff2b2b red · #ffb000 amber · #fff text
+   ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ── Global Reset & Base ──────────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; border-radius: 0 !important; }
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap');
 
-html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"] {
+/* ── Reset ──────────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+    box-sizing: border-box;
+    border-radius: 0 !important;
+}
+
+/* ── Base ───────────────────────────────────────────────────────────────── */
+html, body,
+[data-testid="stAppViewContainer"],
+[data-testid="stApp"],
+[data-testid="stMain"],
+[data-testid="block-container"] {
     background-color: #050505 !important;
     color: #ffffff !important;
     font-family: 'Inter', sans-serif !important;
 }
 
-/* ── Headings ─────────────────────────────────────────────────────────── */
-h1, h2, h3, h4, h5, h6 {
-    font-family: 'Space Mono', monospace !important;
-    text-transform: uppercase !important;
-    letter-spacing: -0.02em !important;
-    color: #ffffff !important;
-    text-shadow: 3px 3px 0 #ff2b2b;
+/* ── Keyframes ──────────────────────────────────────────────────────────── */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0);    }
 }
 
-/* ── App Header Block ─────────────────────────────────────────────────── */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes glitch-shift {
+    0%,100% { clip-path: inset(0 0 95% 0); transform: translate(-3px, 0); }
+    20%      { clip-path: inset(30% 0 50% 0); transform: translate(3px, 0); }
+    40%      { clip-path: inset(60% 0 20% 0); transform: translate(-2px, 0); }
+    60%      { clip-path: inset(10% 0 70% 0); transform: translate(4px, 0); }
+    80%      { clip-path: inset(80% 0 5%  0); transform: translate(-1px, 0); }
+}
+
+@keyframes scanline {
+    0%   { background-position: 0 0;    }
+    100% { background-position: 0 100%; }
+}
+
+@keyframes pulse-shadow {
+    0%,100% { box-shadow: 4px 4px 0 #ff2b2b; }
+    50%      { box-shadow: 4px 4px 0 #ffb000; }
+}
+
+@keyframes card-pop {
+    from { opacity: 0; transform: scale(0.96) translateY(8px); }
+    to   { opacity: 1; transform: scale(1)    translateY(0);   }
+}
+
+/* ── Page entrance ──────────────────────────────────────────────────────── */
+[data-testid="stMain"] > div:first-child {
+    animation: fadeInUp 0.4s ease both;
+}
+
+/* ── Typography ─────────────────────────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6,
+[data-testid="stMarkdownContainer"] h1,
+[data-testid="stMarkdownContainer"] h2,
+[data-testid="stMarkdownContainer"] h3 {
+    font-family: 'Space Mono', monospace !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.06em !important;
+    color: #ffffff !important;
+    text-shadow: 2px 2px 0 #ff2b2b;
+    animation: fadeInUp 0.35s ease both;
+}
+
+/* ── App header ─────────────────────────────────────────────────────────── */
 .ns-header {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    padding: 40px;
-    margin-bottom: 30px;
-    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
-    border-bottom: 4px solid #ff2b2b;
-    border-left: 10px solid #ff2b2b;
+    padding: 32px 40px 28px;
+    margin-bottom: 24px;
+    background: #0a0a0a;
+    border-left: 8px solid #ff2b2b;
+    border-bottom: 2px solid #1a1a1a;
     position: relative;
+    overflow: hidden;
+}
+
+/* Scanline overlay on header */
+.ns-header::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(255,43,43,0.03) 2px,
+        rgba(255,43,43,0.03) 4px
+    );
+    pointer-events: none;
+    animation: scanline 8s linear infinite;
 }
 
 .ns-title {
     font-family: 'Space Mono', monospace !important;
-    font-size: 3.5rem;
-    font-weight: 900;
-    margin: 0;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #ffffff;
+    position: relative;
 }
 
-/* ── Buttons ──────────────────────────────────────────────────────────── */
-[data-testid="stButton"]>button {
+/* Glitch layer on title */
+.ns-title::before {
+    content: attr(data-text);
+    position: absolute;
+    left: 0; top: 0;
+    color: #ff2b2b;
+    animation: glitch-shift 4s steps(1) infinite;
+    opacity: 0.6;
+}
+
+.ns-tagline {
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.95rem;
+    color: #888;
+    letter-spacing: 0.04em;
+}
+
+/* ── Terminal frame (dashboard wrapper) ─────────────────────────────────── */
+.ns-terminal {
+    border: 2px solid #333;
+    box-shadow: 6px 6px 0 #ff2b2b;
+    padding: 0;
+    margin-bottom: 24px;
+    position: relative;
+    animation: fadeIn 0.5s ease both;
+}
+
+.ns-terminal-bar {
+    background: #1a1a1a;
+    border-bottom: 2px solid #333;
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: #666;
+}
+
+.ns-terminal-dot {
+    width: 10px; height: 10px;
+    border-radius: 50% !important;
+    display: inline-block;
+}
+
+/* ── Cards (.ns-card — apply via unsafe_allow_html wrappers) ────────────── */
+.ns-card {
+    background: #1a1a1a;
+    border: 2px solid #333;
+    box-shadow: 4px 4px 0 #333;
+    padding: 16px 20px;
+    margin-bottom: 14px;
+    animation: card-pop 0.3s ease both;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.ns-card:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 #ff2b2b;
+    border-color: #ff2b2b;
+}
+
+.ns-card-amber {
+    background: #1a1a1a;
+    border: 2px solid #ffb000;
+    box-shadow: 4px 4px 0 #ffb000;
+    padding: 16px 20px;
+    margin-bottom: 14px;
+    animation: card-pop 0.3s ease both;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ns-card-amber:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 #ffb000;
+}
+
+/* st.container(border=True) — override to match ns-card */
+[data-testid="stContainer"][data-border="true"],
+[data-testid="stVerticalBlockBorderWrapper"] {
+    background: #1a1a1a !important;
+    border: 2px solid #333 !important;
+    box-shadow: 4px 4px 0 #333 !important;
+    padding: 16px 20px !important;
+    margin-bottom: 14px !important;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease !important;
+    animation: card-pop 0.3s ease both;
+}
+
+[data-testid="stContainer"][data-border="true"]:hover,
+[data-testid="stVerticalBlockBorderWrapper"]:hover {
+    transform: translate(-2px, -2px) !important;
+    box-shadow: 6px 6px 0 #ff2b2b !important;
+    border-color: #ff2b2b !important;
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────────── */
+[data-testid="stButton"] > button,
+[data-testid="stFormSubmitButton"] > button {
     background: #111111 !important;
     color: #ffffff !important;
     border: 2px solid #ffffff !important;
-    box-shadow: 6px 6px 0 #ff2b2b !important;
+    box-shadow: 4px 4px 0 #ff2b2b !important;
     font-family: 'Space Mono', monospace !important;
     font-weight: 700 !important;
-    transition: all 0.2s ease !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    font-size: 0.8rem !important;
+    transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease !important;
 }
 
-[data-testid="stButton"]>button:hover {
+[data-testid="stButton"] > button:hover,
+[data-testid="stFormSubmitButton"] > button:hover {
     transform: translate(2px, 2px) !important;
     box-shadow: 2px 2px 0 #ff2b2b !important;
     background: #ff2b2b !important;
+    color: #ffffff !important;
 }
 
-/* ── Containers & Focus Effects ────────────────────────────────────────── */
-[data-testid="stContainer"] {
-    background: #111111 !important;
+[data-testid="stButton"] > button:active,
+[data-testid="stFormSubmitButton"] > button:active {
+    transform: translate(4px, 4px) !important;
+    box-shadow: 0 0 0 #ff2b2b !important;
+    background: #cc0000 !important;
+}
+
+/* Primary buttons — amber accent */
+[data-testid="stButton"] > button[kind="primary"],
+button[data-testid="stBaseButton-primary"] {
+    background: #ff2b2b !important;
+    color: #ffffff !important;
+    border-color: #ffffff !important;
+    box-shadow: 4px 4px 0 #ffb000 !important;
+    animation: pulse-shadow 3s ease infinite;
+}
+
+[data-testid="stButton"] > button[kind="primary"]:hover,
+button[data-testid="stBaseButton-primary"]:hover {
+    background: #cc0000 !important;
+    animation: none;
+}
+
+/* Download buttons */
+[data-testid="stDownloadButton"] > button {
+    background: #111 !important;
+    color: #ffb000 !important;
+    border: 2px solid #ffb000 !important;
+    box-shadow: 4px 4px 0 #ffb000 !important;
+    font-family: 'Space Mono', monospace !important;
+    font-weight: 700 !important;
+    font-size: 0.75rem !important;
+    text-transform: uppercase !important;
+    transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease !important;
+}
+
+[data-testid="stDownloadButton"] > button:hover {
+    transform: translate(2px, 2px) !important;
+    box-shadow: 2px 2px 0 #ffb000 !important;
+    background: #ffb000 !important;
+    color: #000 !important;
+}
+
+[data-testid="stDownloadButton"] > button:active {
+    transform: translate(4px, 4px) !important;
+    box-shadow: 0 0 0 #ffb000 !important;
+}
+
+/* ── Tabs ───────────────────────────────────────────────────────────────── */
+[data-baseweb="tab-list"] {
+    background: #0a0a0a !important;
+    border-bottom: 2px solid #ff2b2b !important;
+    gap: 0 !important;
+}
+
+[data-baseweb="tab"] {
+    background: #0a0a0a !important;
+    color: #666 !important;
+    border: 2px solid transparent !important;
+    border-bottom: none !important;
+    font-family: 'Space Mono', monospace !important;
+    font-weight: 700 !important;
+    font-size: 0.72rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    padding: 10px 18px !important;
+    transition: color 0.15s ease, background 0.15s ease !important;
+}
+
+[data-baseweb="tab"]:hover {
+    color: #ffffff !important;
+    background: #1a1a1a !important;
+}
+
+[aria-selected="true"][data-baseweb="tab"] {
+    background: #ff2b2b !important;
+    color: #ffffff !important;
+    border: 2px solid #ff2b2b !important;
+    border-bottom: none !important;
+}
+
+[data-baseweb="tab-highlight"],
+[data-baseweb="tab-border"] { display: none !important; }
+
+/* ── Inputs ─────────────────────────────────────────────────────────────── */
+[data-baseweb="select"] > div,
+[data-testid="stTextInput"] input,
+[data-testid="stNumberInput"] input,
+[data-testid="stTextArea"] textarea {
+    background: #111 !important;
+    color: #fff !important;
     border: 2px solid #333 !important;
-    padding: 20px !important;
-    margin-bottom: 20px !important;
-    transition: all 0.3s ease;
+    font-family: 'Inter', sans-serif !important;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
 }
 
-[data-testid="stContainer"]:hover {
+[data-testid="stTextInput"] input:focus,
+[data-testid="stNumberInput"] input:focus,
+[data-testid="stTextArea"] textarea:focus {
     border-color: #ff2b2b !important;
-    box-shadow: 0 0 15px rgba(255, 43, 43, 0.2);
+    box-shadow: 2px 2px 0 #ff2b2b !important;
+    outline: none !important;
 }
 
-/* ── Library List Font Size ────────────────────────────────────────────── */
-.stButton > button { font-size: 0.8rem !important; }
+/* Select dropdown */
+[data-baseweb="popover"] [role="listbox"],
+[data-baseweb="menu"] {
+    background: #111 !important;
+    border: 2px solid #333 !important;
+}
 
-/* ── Sidebar ──────────────────────────────────────────────────────────── */
+[data-baseweb="menu"] li:hover,
+[data-baseweb="menu"] [aria-selected="true"] {
+    background: #ff2b2b !important;
+    color: #fff !important;
+}
+
+/* ── Radio ──────────────────────────────────────────────────────────────── */
+[data-baseweb="radio"] label { color: #ccc !important; }
+
+/* ── Progress bar ───────────────────────────────────────────────────────── */
+[data-testid="stProgress"] > div { background: #1a1a1a !important; }
+[data-testid="stProgress"] > div > div { background: #ff2b2b !important; }
+
+/* ── Expander ───────────────────────────────────────────────────────────── */
+[data-testid="stExpander"] {
+    background: #1a1a1a !important;
+    border: 2px solid #333 !important;
+    transition: border-color 0.15s ease !important;
+}
+
+[data-testid="stExpander"]:hover { border-color: #ffb000 !important; }
+
+[data-testid="stExpander"] summary {
+    font-family: 'Space Mono', monospace !important;
+    font-weight: 700 !important;
+    color: #fff !important;
+}
+
+/* ── Code blocks ────────────────────────────────────────────────────────── */
+[data-testid="stCodeBlock"],
+[data-testid="stCodeBlock"] pre {
+    background: #0a0a0a !important;
+    border: 2px solid #333 !important;
+    color: #e0e0e0 !important;
+    font-family: 'Space Mono', monospace !important;
+}
+
+/* ── Info / warning / error boxes ──────────────────────────────────────── */
+[data-testid="stAlert"] {
+    background: #1a1a1a !important;
+    border-left: 4px solid #ffb000 !important;
+    color: #fff !important;
+}
+
+/* ── Metrics ────────────────────────────────────────────────────────────── */
+[data-testid="stMetric"] {
+    background: #1a1a1a !important;
+    border: 2px solid #333 !important;
+    padding: 14px !important;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+[data-testid="stMetric"]:hover {
+    border-color: #ff2b2b !important;
+    box-shadow: 4px 4px 0 #ff2b2b !important;
+}
+
+[data-testid="stMetricLabel"] {
+    color: #888 !important;
+    font-family: 'Space Mono', monospace !important;
+    font-size: 0.72rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.06em !important;
+}
+
+[data-testid="stMetricValue"] {
+    color: #ff2b2b !important;
+    font-family: 'Space Mono', monospace !important;
+    font-size: 1.8rem !important;
+    font-weight: 700 !important;
+}
+
+/* ── Divider ────────────────────────────────────────────────────────────── */
+hr { border-color: #1a1a1a !important; }
+
+/* ── Sidebar ────────────────────────────────────────────────────────────── */
 [data-testid="stSidebar"] {
     background: #0a0a0a !important;
     border-right: 2px solid #ff2b2b !important;
 }
+
+[data-testid="stSidebar"] a {
+    font-family: 'Space Mono', monospace !important;
+    font-size: 0.8rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    color: #ccc !important;
+    transition: color 0.15s ease !important;
+}
+
+[data-testid="stSidebar"] a:hover { color: #ff2b2b !important; }
+
+/* ── Heatmap hover (cells are plain divs — CSS attr trick) ─────────────── */
+/* Heatmap squares rendered inline; scale on hover via inline style in Python */
+[title]:not([title=""]) {
+    cursor: pointer;
+}
+
+/* ── Scrollbar ──────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #050505; }
+::-webkit-scrollbar-thumb { background: #ff2b2b; }
+::-webkit-scrollbar-thumb:hover { background: #ffb000; }
+
+/* ── Quiz card animation helper ─────────────────────────────────────────── */
+.ns-quiz-card {
+    background: #1a1a1a;
+    border: 2px solid #fff;
+    box-shadow: 4px 4px 0 #ff2b2b;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+    animation: card-pop 0.3s ease both;
+    transition: box-shadow 0.15s ease;
+}
+
+.ns-quiz-card:focus-within {
+    box-shadow: 6px 6px 0 #ffb000;
+    border-color: #ffb000;
+}
+
+/* ── Score badge ────────────────────────────────────────────────────────── */
+.ns-score {
+    font-family: 'Space Mono', monospace;
+    font-size: 3.5rem;
+    font-weight: 700;
+    line-height: 1;
+    animation: fadeInUp 0.4s ease both;
+}
+
+/* ── Caption / subtext ──────────────────────────────────────────────────── */
+[data-testid="stCaptionContainer"], small {
+    color: #666 !important;
+    font-size: 0.8rem !important;
+}
+
+/* ── Links ──────────────────────────────────────────────────────────────── */
+a { color: #ffb000 !important; text-decoration: none !important; }
+a:hover { color: #ff2b2b !important; text-decoration: underline !important; }
