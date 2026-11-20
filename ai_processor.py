@@ -1,15 +1,16 @@
-"""AI processor module for NoteScript ML."""
+"""AI processor module for NoteScript ML with Primary Gemini API and FreeLLMAPI fallback."""
 
+import copy
 import json
 import os
+import re
 import time
 import urllib.error
 import urllib.request
 from typing import Any
-import re
-import copy
 
 from dotenv import load_dotenv
+from openai import APIConnectionError, APIError, OpenAI, RateLimitError
 
 from yt_extractor import format_time, parse_time
 
@@ -17,7 +18,7 @@ load_dotenv()
 
 
 class QuotaExhaustedError(Exception):
-    """Exception raised when Gemini daily quota is exhausted."""
+    """Exception raised when both primary and fallback LLM quotas are exhausted."""
 
 
 SYSTEM_INSTRUCTION_SEGMENT = """You are an expert machine learning teacher creating study notes from ONE segment of a CampusX '100 Days of Machine Learning' lecture. You can see and hear the video segment. The student will use these notes to revise for exams and interviews, so be detailed.
@@ -69,10 +70,12 @@ Output ONLY valid JSON matching this schema:
 No markdown fences, no extra commentary."""
 
 
+# ── GEMINI PRIMARY CALLS ──────────────────────────────────────────────────────
+
 def _execute_gemini_request(payload: dict, timeout_seconds: int = 120) -> str:
-    """Send a direct JSON payload to the Gemini generateContent REST endpoint."""
-    api_key = os.getenv("GEMINI_API_KEY", "")
-    model = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+    """Send JSON payload directly to the primary Gemini generateContent endpoint."""
+    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash").strip()
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY environment variable is missing.")
 
@@ -106,15 +109,16 @@ def _execute_gemini_request(payload: dict, timeout_seconds: int = 120) -> str:
     return "".join(text_parts)
 
 
-def call_with_retry(payload: dict) -> str:
-    """Execute Gemini request with 3 retries on transient errors and catch daily quota limits."""
-    retry_delays = [5, 15, 40]
+def _call_gemini_with_retry(payload: dict) -> str:
+    """Execute Gemini request with retries on transient errors."""
+    retry_delays = [3, 8]
     last_exception = None
 
-    for attempt in range(4):
+    for attempt in range(3):
         try:
             return _execute_gemini_request(payload)
         except urllib.error.HTTPError as http_error:
+            last_exception = http_error
             error_status = http_error.code
             try:
                 error_body = http_error.read().decode("utf-8")
@@ -122,48 +126,173 @@ def call_with_retry(payload: dict) -> str:
                 error_body = str(http_error)
 
             lower_body = error_body.lower()
-            # Check for daily quota exhaustion
-            if "quota" in lower_body and ("daily" in lower_body or "per_day" in lower_body or "perday" in lower_body or "free_tier_requests" in lower_body):
-                if error_status == 429:
-                    raise QuotaExhaustedError("Gemini API daily quota exhausted. Please resume tomorrow.")
-
-            # Check for retryable rate limits or server errors
-            if error_status == 429 or error_status >= 500:
-                last_exception = http_error
+            if "quota" in lower_body or error_status == 429:
+                raise QuotaExhaustedError("Gemini daily quota exhausted.")
+            if error_status >= 500:
                 if attempt < len(retry_delays):
                     time.sleep(retry_delays[attempt])
                     continue
-            raise RuntimeError(f"Gemini API returned error {error_status}: {error_body}") from http_error
-        except (urllib.error.URLError, TimeoutError, OSError) as network_error:
-            last_exception = network_error
+            raise RuntimeError(f"Gemini API error {error_status}: {error_body}") from http_error
+        except (urllib.error.URLError, TimeoutError, OSError) as net_err:
+            last_exception = net_err
             if attempt < len(retry_delays):
                 time.sleep(retry_delays[attempt])
                 continue
-            raise RuntimeError(f"Network error communicating with Gemini API: {network_error}") from network_error
+            raise RuntimeError(f"Network error communicating with Gemini: {net_err}") from net_err
 
     if last_exception is not None:
         raise last_exception
-    raise RuntimeError("Call failed after maximum retry attempts.")
+    raise RuntimeError("Gemini call failed after retries.")
 
+
+# ── FREELLMAPI FALLBACK CALLS ─────────────────────────────────────────────────
+
+def get_freellmapi_client() -> OpenAI:
+    """Instantiate OpenAI client for the local FreeLLMAPI router."""
+    base_url = os.getenv("LLM_BASE_URL", "http://127.0.0.1:31415/v1").strip()
+    api_key = os.getenv("LLM_API_KEY", "").strip()
+    if not api_key:
+        raise RuntimeError("LLM_API_KEY environment variable is missing.")
+    return OpenAI(base_url=base_url, api_key=api_key)
+
+
+def _call_freellmapi(
+    messages: list[dict],
+    temperature: float = 0.2,
+    max_tokens: int = 8192,
+) -> str:
+    """Send chat completion to local FreeLLMAPI router with 8192 max tokens."""
+    client = get_freellmapi_client()
+    model = os.getenv("LLM_MODEL", "auto:notescript-ml").strip()
+
+    response = client.chat.completions.create(
+        model=model,
+        messages=messages,
+        temperature=temperature,
+        max_tokens=max_tokens,
+    )
+    choices = response.choices
+    if len(choices) == 0:
+        raise RuntimeError("No choices returned by FreeLLMAPI router.")
+
+    content = choices[0].message.content
+    if not content:
+        raise RuntimeError("Empty response content from FreeLLMAPI router.")
+
+    return content
+
+
+def _call_freellmapi_with_retry(
+    messages: list[dict],
+    temperature: float = 0.2,
+    max_tokens: int = 8192,
+) -> str:
+    """Execute FreeLLMAPI request with backoff retries."""
+    retry_delays = [3, 8]
+    last_exception = None
+
+    for attempt in range(3):
+        try:
+            return _call_freellmapi(
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+        except (RateLimitError, APIError) as api_err:
+            last_exception = api_err
+            err_str = str(api_err).lower()
+            if "quota" in err_str or "429" in err_str:
+                raise QuotaExhaustedError("FreeLLMAPI quota exhausted.")
+            if attempt < len(retry_delays):
+                time.sleep(retry_delays[attempt])
+                continue
+            raise RuntimeError(f"FreeLLMAPI error: {api_err}") from api_err
+        except APIConnectionError as conn_err:
+            last_exception = conn_err
+            base_url = os.getenv("LLM_BASE_URL", "http://127.0.0.1:31415/v1")
+            raise RuntimeError(f"Cannot reach FreeLLMAPI router at {base_url}: {conn_err}") from conn_err
+        except Exception as generic_err:
+            last_exception = generic_err
+            if attempt < len(retry_delays):
+                time.sleep(retry_delays[attempt])
+                continue
+            raise RuntimeError(f"Error communicating with FreeLLMAPI: {generic_err}") from generic_err
+
+    if last_exception is not None:
+        raise last_exception
+    raise RuntimeError("FreeLLMAPI call failed after retries.")
+
+
+# ── ORCHESTRATION WITH DUAL-TIER FALLBACK ──────────────────────────────────────
 
 def _clean_json_text(raw_text: str) -> str:
-    """Strip markdown code fence wrappers and extract valid JSON string."""
+    """Strip markdown code fence wrappers and extract clean JSON string."""
     cleaned = raw_text.strip()
-    # Strip leading/trailing code fences if present
     cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned, flags=re.IGNORECASE)
     cleaned = re.sub(r"\s*```$", "", cleaned)
     return cleaned.strip()
 
 
-def _parse_or_retry_json(payload: dict) -> dict:
-    """Parse JSON response from API with strict=False, retrying once if syntax is invalid."""
-    raw_text = call_with_retry(payload)
+def _execute_with_fallback(
+    gemini_payload: dict,
+    openai_messages: list[dict],
+    temperature: float = 0.2,
+    max_tokens: int = 8192,
+) -> str:
+    """Attempt primary Gemini API first; on failure, seamlessly fall back to local FreeLLMAPI."""
+    gemini_key = os.getenv("GEMINI_API_KEY", "").strip()
+    freellm_key = os.getenv("LLM_API_KEY", "").strip()
+
+    gemini_failed = False
+    gemini_error = ""
+
+    # Tier 1: Try Primary Google Gemini API
+    if gemini_key:
+        try:
+            return _call_gemini_with_retry(gemini_payload)
+        except Exception as exc:
+            gemini_failed = True
+            gemini_error = str(exc)
+
+    # Tier 2: Fall back to local FreeLLMAPI router
+    if freellm_key:
+        try:
+            return _call_freellmapi_with_retry(
+                messages=openai_messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+        except QuotaExhaustedError:
+            raise
+        except Exception as fl_exc:
+            raise RuntimeError(
+                f"Both Primary Gemini and FreeLLMAPI fallback failed. Gemini: {gemini_error} | FreeLLMAPI: {fl_exc}"
+            ) from fl_exc
+
+    if gemini_failed:
+        raise RuntimeError(f"Primary Gemini call failed and no FreeLLMAPI fallback available: {gemini_error}")
+    raise RuntimeError("No LLM API keys configured (neither GEMINI_API_KEY nor LLM_API_KEY).")
+
+
+def _parse_or_retry_json(
+    gemini_payload: dict,
+    openai_messages: list[dict],
+    temperature: float = 0.2,
+    max_tokens: int = 8192,
+) -> dict:
+    """Parse JSON response from dual-engine pipeline, retrying if formatting fails."""
+    raw_text = _execute_with_fallback(
+        gemini_payload=gemini_payload,
+        openai_messages=openai_messages,
+        temperature=temperature,
+        max_tokens=max_tokens,
+    )
     cleaned = _clean_json_text(raw_text)
 
     try:
         return json.loads(cleaned, strict=False)
     except json.JSONDecodeError:
-        # Regex search to extract outer bracket JSON payload if stray text exists
+        # Regex search for outer JSON bracket payload
         match = re.search(r"\{.*\}", cleaned, re.DOTALL)
         if match:
             try:
@@ -171,16 +300,28 @@ def _parse_or_retry_json(payload: dict) -> dict:
             except json.JSONDecodeError:
                 pass
 
-        # Deep copy to avoid mutating original payload dict structure
-        retry_payload = copy.deepcopy(payload)
-        contents = retry_payload.get("contents", [])
-        if len(contents) > 0:
-            prompt_part = {
-                "text": "The previous response had invalid JSON formatting/control characters. Return ONLY valid raw JSON with proper string escaping."
-            }
-            contents[0]["parts"].append(prompt_part)
+        # Retry once asking for clean raw JSON
+        retry_gemini = copy.deepcopy(gemini_payload)
+        gemini_contents = retry_gemini.get("contents", [])
+        if len(gemini_contents) > 0:
+            gemini_contents[0]["parts"].append(
+                {"text": "The previous response had invalid JSON. Return ONLY raw valid JSON."}
+            )
 
-        raw_text_retry = call_with_retry(retry_payload)
+        retry_openai = copy.deepcopy(openai_messages)
+        retry_openai.append(
+            {
+                "role": "user",
+                "content": "The previous response had invalid JSON. Return ONLY raw valid JSON matching the schema.",
+            }
+        )
+
+        raw_text_retry = _execute_with_fallback(
+            gemini_payload=retry_gemini,
+            openai_messages=retry_openai,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
         cleaned_retry = _clean_json_text(raw_text_retry)
         try:
             return json.loads(cleaned_retry, strict=False)
@@ -193,8 +334,11 @@ def _parse_or_retry_json(payload: dict) -> dict:
                     pass
 
             raise RuntimeError(
-                f"Failed to parse valid JSON from Gemini output: {cleaned_retry[:300]}"
+                f"Failed to parse valid JSON from LLM output: {cleaned_retry[:300]}"
             )
+
+
+# ── TIME NORMALIZATION & CONTRACT ENFORCEMENT ─────────────────────────────────
 
 def fix_timestamps(data: dict, start_seconds: int, end_seconds: int) -> dict:
     """Adjust out-of-range timestamps and ensure required segment list keys exist."""
@@ -270,7 +414,6 @@ def fix_timestamps(data: dict, start_seconds: int, end_seconds: int) -> dict:
                 raw_ts = item["timestamp"]
                 parsed_sec = parse_time(str(raw_ts))
                 if parsed_sec is not None:
-                    # If outside segment range with buffer, offset by segment start
                     if parsed_sec < start_seconds or parsed_sec > (end_seconds + 30):
                         parsed_sec = parsed_sec + start_seconds
                     item["timestamp"] = format_time(parsed_sec)
@@ -280,6 +423,8 @@ def fix_timestamps(data: dict, start_seconds: int, end_seconds: int) -> dict:
     return data
 
 
+# ── PUBLIC API METHODS ────────────────────────────────────────────────────────
+
 def summarize_segment(
     video_url: str,
     start_seconds: int,
@@ -288,22 +433,26 @@ def summarize_segment(
     resolution: str = "LOW",
     total_duration: int = 0,
 ) -> dict:
-    """Summarize a video segment using Gemini API and return the structured note dict."""
-    user_prompt = f"""Video segment start: {format_time(start_seconds)} ({start_seconds}s)
-Video segment end: {format_time(end_seconds)} ({end_seconds}s)
+    """Summarize a video segment using Primary Gemini with FreeLLMAPI fallback."""
+    notebook_section = notebook_text if notebook_text else "None provided."
+
+    user_prompt = f"""VIDEO INFORMATION:
+Video URL: {video_url}
+Segment start: {format_time(start_seconds)} ({start_seconds}s)
+Segment end: {format_time(end_seconds)} ({end_seconds}s)
 Total video duration: {format_time(total_duration)} ({total_duration}s)
 
 OFFICIAL NOTEBOOK CONTENT:
-{notebook_text if notebook_text else 'None provided.'}
+{notebook_section}
 
-Watch this segment carefully. Output detailed study notes in Hinglish Roman script matching the Segment JSON contract."""
+Watch and analyze this lecture segment carefully. Output detailed study notes in Hinglish Roman script matching the Segment JSON contract."""
 
-    # Map resolution string
+    # Map resolution string for Gemini
     mapped_resolution = "MEDIA_RESOLUTION_LOW"
     if str(resolution).upper() == "HIGH":
         mapped_resolution = "MEDIA_RESOLUTION_HIGH"
 
-    payload = {
+    gemini_payload = {
         "systemInstruction": {
             "parts": [{"text": SYSTEM_INSTRUCTION_SEGMENT}]
         },
@@ -331,20 +480,30 @@ Watch this segment carefully. Output detailed study notes in Hinglish Roman scri
         },
     }
 
-    raw_dict = _parse_or_retry_json(payload)
+    openai_messages = [
+        {"role": "system", "content": SYSTEM_INSTRUCTION_SEGMENT},
+        {"role": "user", "content": user_prompt},
+    ]
+
+    raw_dict = _parse_or_retry_json(
+        gemini_payload=gemini_payload,
+        openai_messages=openai_messages,
+        temperature=0.2,
+        max_tokens=8192,
+    )
     fixed_dict = fix_timestamps(raw_dict, start_seconds, end_seconds)
     return fixed_dict
 
 
 def build_revision(merged_notes_text: str) -> dict:
-    """Generate revision pack (summary, cheat sheet, flashcards, quiz, interview questions)."""
+    """Generate revision pack using Primary Gemini with FreeLLMAPI fallback."""
     user_prompt = f"""Here are the complete merged study notes for this Machine Learning lecture:
 
 {merged_notes_text}
 
 Generate the revision pack following the Revision JSON contract."""
 
-    payload = {
+    gemini_payload = {
         "systemInstruction": {
             "parts": [{"text": SYSTEM_INSTRUCTION_REVISION}]
         },
@@ -361,7 +520,18 @@ Generate the revision pack following the Revision JSON contract."""
         },
     }
 
-    revision_dict = _parse_or_retry_json(payload)
+    openai_messages = [
+        {"role": "system", "content": SYSTEM_INSTRUCTION_REVISION},
+        {"role": "user", "content": user_prompt},
+    ]
+
+    revision_dict = _parse_or_retry_json(
+        gemini_payload=gemini_payload,
+        openai_messages=openai_messages,
+        temperature=0.3,
+        max_tokens=8192,
+    )
+
     if isinstance(revision_dict, list):
         if len(revision_dict) > 0 and isinstance(revision_dict[0], dict):
             revision_dict = revision_dict[0]
@@ -386,33 +556,63 @@ Generate the revision pack following the Revision JSON contract."""
 
 
 def check_api_status() -> dict:
-    """Check if the Gemini API is reachable and has quota available."""
-    api_key = os.getenv("GEMINI_API_KEY", "")
-    model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
-    if not api_key:
-        return {"available": False, "message": "Missing GEMINI_API_KEY"}
+    """Check connectivity to Primary Gemini API, falling back to FreeLLMAPI router status."""
+    gemini_key = os.getenv("GEMINI_API_KEY", "").strip()
+    gemini_model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash").strip()
 
-    endpoint_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
-    payload = {
-        "contents": [{"parts": [{"text": "hi"}]}],
-        "generationConfig": {"maxOutputTokens": 2},
-    }
-    serialized_payload = json.dumps(payload).encode("utf-8")
-    request = urllib.request.Request(
-        endpoint_url,
-        data=serialized_payload,
-        headers={"Content-Type": "application/json"},
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=12) as response:
-            if response.status == 200:
-                return {"available": True, "message": "API online and ready"}
-            return {"available": False, "message": f"Status code {response.status}"}
-    except urllib.error.HTTPError as http_error:
-        if http_error.code == 429:
-            return {"available": False, "message": "Daily quota limit currently active"}
-        if http_error.code == 503:
-            return {"available": False, "message": "Google Gemini Service busy/temporarily unavailable (503)"}
-        return {"available": False, "message": f"HTTP {http_error.code}"}
-    except Exception as exc:
-        return {"available": False, "message": f"Connection error: {exc}"}
+    # Check Primary Gemini
+    gemini_ok = False
+    gemini_msg = ""
+    if gemini_key:
+        endpoint_url = f"https://generativelanguage.googleapis.com/v1beta/models/{gemini_model}:generateContent?key={gemini_key}"
+        payload = {
+            "contents": [{"parts": [{"text": "hi"}]}],
+            "generationConfig": {"maxOutputTokens": 2},
+        }
+        serialized_payload = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(
+            endpoint_url,
+            data=serialized_payload,
+            headers={"Content-Type": "application/json"},
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=8) as response:
+                if response.status == 200:
+                    return {"available": True, "message": f"Online & ready (Gemini {gemini_model})"}
+        except urllib.error.HTTPError as http_error:
+            if http_error.code == 429:
+                gemini_msg = f"Gemini quota limit active (429)"
+            elif http_error.code == 503:
+                gemini_msg = f"Gemini server busy (503)"
+            else:
+                gemini_msg = f"Gemini error {http_error.code}"
+        except Exception as exc:
+            gemini_msg = f"Gemini connection error: {exc}"
+
+    # If Gemini is not operational, test local FreeLLMAPI fallback
+    freellm_key = os.getenv("LLM_API_KEY", "").strip()
+    freellm_base = os.getenv("LLM_BASE_URL", "http://127.0.0.1:31415/v1").strip()
+    freellm_model = os.getenv("LLM_MODEL", "auto:notescript-ml").strip()
+
+    if freellm_key:
+        try:
+            client = OpenAI(base_url=freellm_base, api_key=freellm_key, timeout=8.0)
+            res = client.chat.completions.create(
+                model=freellm_model,
+                messages=[{"role": "user", "content": "ping"}],
+                max_tokens=2,
+            )
+            if res and res.choices and len(res.choices) > 0:
+                fallback_reason = f" [Gemini: {gemini_msg}]" if gemini_msg else ""
+                return {
+                    "available": True,
+                    "message": f"Online via FreeLLMAPI fallback ({freellm_model}){fallback_reason}",
+                }
+        except APIConnectionError:
+            pass
+        except Exception as fl_exc:
+            pass
+
+    if gemini_msg:
+        return {"available": False, "message": f"Primary unavailable: {gemini_msg}. FreeLLMAPI offline."}
+    return {"available": False, "message": "No API keys configured or providers reachable."}
