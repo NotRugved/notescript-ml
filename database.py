@@ -1,7 +1,18 @@
 """Database management module for NoteScript ML."""
 
+import os
 import sqlite3
 import time
+
+_INITIALIZED_DBS: set[str] = set()
+
+
+def _get_connection(db_path: str = "notescript.db") -> sqlite3.Connection:
+    """Return an open SQLite connection, initializing database schema on cold boot."""
+    # Ensure database schema is present before returning a connection.
+    if db_path not in _INITIALIZED_DBS or not os.path.exists(db_path):
+        init_db(db_path)
+    return sqlite3.connect(db_path)
 
 
 def init_db(db_path: str = "notescript.db") -> None:
@@ -104,6 +115,7 @@ def init_db(db_path: str = "notescript.db") -> None:
                     pass
     finally:
         connection.close()
+    _INITIALIZED_DBS.add(db_path)
 
 
 def save_video(
@@ -116,7 +128,7 @@ def save_video(
     """Save or update video metadata in the videos table."""
     # Record creation timestamp for sorting and display.
     created_at = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-    connection = sqlite3.connect(db_path)
+    connection = _get_connection(db_path)
     try:
         cursor = connection.cursor()
         cursor.execute(
@@ -133,7 +145,7 @@ def save_video(
 
 def list_videos(db_path: str = "notescript.db") -> list[dict]:
     """Retrieve all saved videos from the database."""
-    connection = sqlite3.connect(db_path)
+    connection = _get_connection(db_path)
     try:
         cursor = connection.cursor()
         cursor.execute(
@@ -167,7 +179,7 @@ def get_segment(
     db_path: str = "notescript.db",
 ) -> str | None:
     """Fetch the cached JSON text of a processed video segment."""
-    connection = sqlite3.connect(db_path)
+    connection = _get_connection(db_path)
     try:
         cursor = connection.cursor()
         cursor.execute(
@@ -193,7 +205,7 @@ def save_segment(
     db_path: str = "notescript.db",
 ) -> None:
     """Save or update processed segment JSON text in the database."""
-    connection = sqlite3.connect(db_path)
+    connection = _get_connection(db_path)
     try:
         cursor = connection.cursor()
         cursor.execute(
@@ -214,7 +226,7 @@ def get_revision(
     db_path: str = "notescript.db",
 ) -> str | None:
     """Fetch the cached revision pack JSON text for a video and run key."""
-    connection = sqlite3.connect(db_path)
+    connection = _get_connection(db_path)
     try:
         cursor = connection.cursor()
         cursor.execute(
@@ -239,7 +251,7 @@ def save_revision(
     db_path: str = "notescript.db",
 ) -> None:
     """Save or update revision pack JSON text for a video and run key."""
-    connection = sqlite3.connect(db_path)
+    connection = _get_connection(db_path)
     try:
         cursor = connection.cursor()
         cursor.execute(
@@ -260,7 +272,7 @@ def get_cache(
     db_path: str = "notescript.db",
 ) -> str | None:
     """Retrieve cached data if it exists and has not exceeded max age in hours."""
-    connection = sqlite3.connect(db_path)
+    connection = _get_connection(db_path)
     try:
         cursor = connection.cursor()
         cursor.execute(
@@ -309,7 +321,7 @@ def set_cache(
 ) -> None:
     """Store or update cached text with current timestamp."""
     fetched_at = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-    connection = sqlite3.connect(db_path)
+    connection = _get_connection(db_path)
     try:
         cursor = connection.cursor()
         cursor.execute(
@@ -330,7 +342,7 @@ def get_cached_playlist(
     db_path: str = "notescript.db",
 ) -> list[dict] | None:
     """Retrieve cached playlist items if they exist and are younger than max_age_hours."""
-    connection = sqlite3.connect(db_path)
+    connection = _get_connection(db_path)
     try:
         cursor = connection.cursor()
         cursor.execute(
@@ -388,7 +400,7 @@ def save_cached_playlist(
 ) -> None:
     """Save playlist items to database with current timestamp."""
     fetched_at = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-    connection = sqlite3.connect(db_path)
+    connection = _get_connection(db_path)
     try:
         cursor = connection.cursor()
         # Clear existing rows for this playlist before inserting refreshed items
@@ -414,7 +426,7 @@ def save_cached_playlist(
 
 def search_notes(query: str, db_path: str = "notescript.db") -> list[dict]:
     """Search videos whose title, day_label, or segment content matches query."""
-    connection = sqlite3.connect(db_path)
+    connection = _get_connection(db_path)
     try:
         cursor = connection.cursor()
         search_pattern = f"%{query}%"
@@ -447,7 +459,7 @@ def search_notes(query: str, db_path: str = "notescript.db") -> list[dict]:
 
 def get_progress_stats(db_path: str = "notescript.db") -> dict:
     """Get overall progress stats (total videos, days covered)."""
-    connection = sqlite3.connect(db_path)
+    connection = _get_connection(db_path)
     try:
         cursor = connection.cursor()
         cursor.execute("SELECT COUNT(DISTINCT video_id) FROM videos")
@@ -461,7 +473,7 @@ def get_progress_stats(db_path: str = "notescript.db") -> dict:
 
 def get_daily_activity(db_path: str = "notescript.db") -> dict:
     """Return a dict mapping date strings to count of videos processed that day."""
-    connection = sqlite3.connect(db_path)
+    connection = _get_connection(db_path)
     try:
         cursor = connection.cursor()
         cursor.execute(
@@ -491,7 +503,7 @@ def save_quiz_result(
     db_path: str = "notescript.db",
 ) -> None:
     """Save a completed quiz result to the quiz_attempts table."""
-    connection = sqlite3.connect(db_path)
+    connection = _get_connection(db_path)
     try:
         cursor = connection.cursor()
         cursor.execute(
@@ -525,7 +537,7 @@ def save_quiz_result(
 def get_streak_stats(db_path: str = "notescript.db") -> dict:
     """Compute current and max daily learning streaks from video activity dates."""
     import datetime
-    connection = sqlite3.connect(db_path)
+    connection = _get_connection(db_path)
     try:
         cursor = connection.cursor()
         cursor.execute(
@@ -568,7 +580,7 @@ def get_streak_stats(db_path: str = "notescript.db") -> dict:
 
 def get_quiz_results(db_path: str = "notescript.db") -> list[dict]:
     """Retrieve all quiz attempt results ordered by most recent first."""
-    connection = sqlite3.connect(db_path)
+    connection = _get_connection(db_path)
     try:
         cursor = connection.cursor()
         cursor.execute(
@@ -618,7 +630,7 @@ def _ensure_queue_table(cursor: sqlite3.Cursor) -> None:
 
 def add_to_queue(day_num: int, video_url: str, title: str, db_path: str = "notescript.db") -> int:
     """Add a new lecture video into the generation queue."""
-    connection = sqlite3.connect(db_path)
+    connection = _get_connection(db_path)
     try:
         cursor = connection.cursor()
         _ensure_queue_table(cursor)
@@ -638,7 +650,7 @@ def add_to_queue(day_num: int, video_url: str, title: str, db_path: str = "notes
 
 def get_queue(db_path: str = "notescript.db") -> list[dict]:
     """Retrieve all items in the generation queue ordered by day_num."""
-    connection = sqlite3.connect(db_path)
+    connection = _get_connection(db_path)
     try:
         cursor = connection.cursor()
         _ensure_queue_table(cursor)
@@ -671,7 +683,7 @@ def get_queue(db_path: str = "notescript.db") -> list[dict]:
 
 def update_queue_status(queue_id: int, status: str, error_message: str = "", db_path: str = "notescript.db") -> None:
     """Update status and optional error message for a queue item."""
-    connection = sqlite3.connect(db_path)
+    connection = _get_connection(db_path)
     try:
         cursor = connection.cursor()
         _ensure_queue_table(cursor)
@@ -691,7 +703,7 @@ def update_queue_status(queue_id: int, status: str, error_message: str = "", db_
 
 def delete_queue_item(queue_id: int, db_path: str = "notescript.db") -> None:
     """Delete an item from the generation queue by id."""
-    connection = sqlite3.connect(db_path)
+    connection = _get_connection(db_path)
     try:
         cursor = connection.cursor()
         _ensure_queue_table(cursor)
@@ -703,7 +715,7 @@ def delete_queue_item(queue_id: int, db_path: str = "notescript.db") -> None:
 
 def clear_queue(only_completed: bool = False, db_path: str = "notescript.db") -> None:
     """Clear items from the generation queue."""
-    connection = sqlite3.connect(db_path)
+    connection = _get_connection(db_path)
     try:
         cursor = connection.cursor()
         _ensure_queue_table(cursor)
@@ -718,7 +730,7 @@ def clear_queue(only_completed: bool = False, db_path: str = "notescript.db") ->
 
 def get_queue_summary(db_path: str = "notescript.db") -> dict:
     """Get counts of queue items grouped by status."""
-    connection = sqlite3.connect(db_path)
+    connection = _get_connection(db_path)
     try:
         cursor = connection.cursor()
         _ensure_queue_table(cursor)
