@@ -51,17 +51,22 @@ cp .env.example .env
 ```
 Open `.env` and configure:
 ```env
-# Required: Obtain from https://aistudio.google.com
-GEMINI_API_KEY=your_key_here
-
-# Recommended model: gemini-3.5-flash or gemini-3.8-flash
+# Primary: Google Gemini API Credentials
+GEMINI_API_KEY=your_gemini_api_key_here
 GEMINI_MODEL=gemini-3.5-flash
 
-# Optional: CampusX 100 Days of Machine Learning Playlist URL
-PLAYLIST_URL=https://www.youtube.com/playlist?list=PLKnIA16_Rmvbr7zKYQuBfsVkjoLcJgxHH
+# Fallback: Local FreeLLMAPI Router (OpenAI-compatible)
+LLM_BASE_URL=http://127.0.0.1:31415/v1
+LLM_API_KEY=freellmapi-your-unified-key-here
+LLM_MODEL=auto:notescript-ml
 
-# Optional: GitHub Personal Access Token (avoids GitHub API 60 req/hr rate limits)
+# Optional Playlist & GitHub Configuration
+PLAYLIST_URL=https://www.youtube.com/playlist?list=PLKnIA16_Rmvbr7zKYQuBfsVkjoLcJgxHH
 GITHUB_TOKEN=
+GITHUB_REPO=NotRugved/notescript-ml
+
+# Admin Access Control (protects note generation)
+ADMIN_ACCESS_CODE=your_admin_code_here
 ```
 
 ---
@@ -99,9 +104,10 @@ Open your browser at `http://localhost:8501`.
 
 ## ⚠️ Known Limitations & Design Notes
 
-1. **Gemini API Quota**:
-   - The free-tier Gemini API has daily request/token limits (~20 requests/day on some preview models). Long lectures broken into multiple segments may reach the daily limit.
-   - If quota is reached, NoteScript ML catches `QuotaExhaustedError`, sets `partial=True`, saves all completed segments in SQLite, and alerts you. Rerun the same video tomorrow and it will pick up exactly where it left off without reprocessing completed segments.
+1. **Dual-Tier AI Engine & Quota Resilience**:
+   - The primary engine connects directly to the Google AI Studio Gemini API (`gemini-3.5-flash`).
+   - If Google's free-tier rate limits, quota limits (429), or temporary server errors (503) trigger, NoteScript ML automatically fails over to the local FreeLLMAPI OpenAI-compatible router (`auto:notescript-ml`).
+   - If both providers are exhausted, NoteScript ML catches `QuotaExhaustedError`, marks `partial=True`, saves all completed segments in SQLite, and alerts you. Rerunning resumes seamlessly from the cached segments.
 2. **Hinglish Style**:
    - Notes follow Roman script with Hindi conversational flow and English technical terms. While consistently natural, exact fluency and phrasing may vary across segments. Timestamps are absolute video times (`MM:SS`) aligned with segment boundaries.
 3. **Reconstructed Code**:
@@ -117,7 +123,8 @@ Open your browser at `http://localhost:8501`.
 
 - **Framework**: Streamlit
 - **Package & Environment Management**: `uv`
-- **Multimodal AI**: Google Gemini API (`gemini-3.5-flash`, `gemini-3.8-flash`) via `urllib.request` REST endpoints
+- **Primary AI Engine**: Google Gemini API (`gemini-3.5-flash`) via direct REST endpoint
+- **Fallback AI Engine**: Local FreeLLMAPI Router (`auto:notescript-ml`) via `openai` client (`max_tokens=8192`)
 - **Video Metadata & Ingestion**: `yt-dlp`
 - **Database**: SQLite (`notescript.db`) with plain parameterized SQL
 - **Styling**: Custom Neo-Brutalist CSS (`ui/theme.css`, `ui/intro.html`) with Google Fonts Space Mono & DM Sans

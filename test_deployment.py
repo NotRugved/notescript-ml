@@ -215,8 +215,8 @@ import github_sync
 
 repo_slug = github_sync.get_github_repo()
 report("get_github_repo configured", bool(repo_slug and "/" in repo_slug), repo_slug)
-remote_sha = github_sync.get_remote_file_sha("notescript.db")
-report("get_remote_file_sha reads remote notescript.db", bool(remote_sha and len(remote_sha) == 40), f"sha: {remote_sha[:10]}…")
+remote_sha = github_sync.get_remote_file_sha("README.md")
+report("get_remote_file_sha reads remote repository file", bool(remote_sha and len(remote_sha) == 40), f"sha: {remote_sha[:10]}…")
 
 # ── CLEANUP & SUMMARY ─────────────────────────────────────────────────────────
 if os.path.exists(TEST_DB):

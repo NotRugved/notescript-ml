@@ -1,7 +1,29 @@
+# Environments & Secrets
 .env
 .env.*
 !.env.example
-.venv
-__pycache__
-scratch/
 
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.pytest_cache/
+
+# Databases & Runtime SQLite
+*.db
+*.sqlite
+*.sqlite3
+
+# IDEs & Coding Agents
+.cursor/
+.claude/
+.antigravity/
+.vscode/
+
+# Local Exports & Scratch Files
+scratch/
+temp_test_exports/
+exports/
+outputs/
+*.log
