@@ -108,11 +108,21 @@ def init_db(db_path: str = "notescript.db") -> None:
             cursor.execute("SELECT COUNT(*) FROM videos")
             video_cnt = cursor.fetchone()[0]
             if video_cnt == 0:
+                # First try: hydrate from generated_notes/ folder (public, no token needed)
                 try:
-                    from github_sync import pull_db_from_github
-                    pull_db_from_github(db_path)
+                    from github_sync import hydrate_from_generated_notes
+                    hydrate_from_generated_notes(db_path)
                 except Exception:
                     pass
+                # Fallback: try pulling the binary db (requires GITHUB_TOKEN)
+                cursor.execute("SELECT COUNT(*) FROM videos")
+                video_cnt_after = cursor.fetchone()[0]
+                if video_cnt_after == 0:
+                    try:
+                        from github_sync import pull_db_from_github
+                        pull_db_from_github(db_path)
+                    except Exception:
+                        pass
     finally:
         connection.close()
     _INITIALIZED_DBS.add(db_path)

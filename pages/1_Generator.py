@@ -20,7 +20,7 @@ from database import (
     update_queue_status,
 )
 from ai_processor import check_api_status
-from github_sync import push_db_to_github
+from github_sync import push_notes_to_github, push_all_new_notes
 
 st.set_page_config(page_title="Generator - NoteScript ML", page_icon="🚀", layout="wide")
 apply_theme()
@@ -116,8 +116,25 @@ with tab_single:
                 status_box.update(label="⏸️ Partial save: daily quota hit. Resume tomorrow!", state="complete")
             else:
                 status_box.update(label="✅ Success!", state="complete")
-            # Push updated database to GitHub for cross-device persistence
-            push_db_to_github()
+            # Push generated notes files to GitHub for sharing
+            from exports import build_main_notes_md, build_revision_md, build_code_py
+            import time as _time
+            _vid_id = pipeline_output["video_info"]["video_id"]
+            _meta = {
+                "video_id": _vid_id,
+                "title": pipeline_output["video_info"].get("title", ""),
+                "day_label": pipeline_output["video_info"].get("day_label", ""),
+                "duration_seconds": pipeline_output["video_info"].get("duration_seconds", 0),
+                "video_url": pipeline_output["video_info"].get("video_url", ""),
+                "pushed_at": _time.strftime("%Y-%m-%d %H:%M:%S", _time.localtime()),
+            }
+            push_notes_to_github(
+                _vid_id,
+                build_main_notes_md(pipeline_output),
+                build_revision_md(pipeline_output),
+                build_code_py(pipeline_output),
+                _meta,
+            )
             st.switch_page("pages/3_Notes.py")
         except Exception as exc:
             status_box.update(label=f"❌ Error: {exc}", state="error")
@@ -150,12 +167,15 @@ with tab_batch:
             st.rerun()
     with status_cols[2]:
         if st.button("☁️ Sync to GitHub", key="btn_manual_sync_gh", use_container_width=True):
-            with st.spinner("Syncing to GitHub..."):
-                sync_ok, sync_msg = push_db_to_github()
-                if sync_ok:
-                    st.success("✅ Synced to GitHub!")
+            with st.spinner("Syncing generated notes to GitHub..."):
+                pushed_cnt, total_cnt, sync_errs = push_all_new_notes()
+                if pushed_cnt > 0:
+                    st.success(f"✅ Successfully synced {pushed_cnt} lecture(s) to GitHub generated_notes/!")
+                elif total_cnt == 0:
+                    st.info("ℹ️ All lecture notes are already synced on GitHub!")
                 else:
-                    st.info(f"ℹ️ {sync_msg}")
+                    err_summary = "; ".join(sync_errs) if sync_errs else "Unknown error"
+                    st.error(f"❌ Sync failed: {err_summary}")
 
     st.divider()
 
@@ -303,8 +323,8 @@ with tab_batch:
                     processed_count += 1
 
         if quota_stopped:
-            # Sync partial progress to GitHub
-            push_db_to_github()
+            # Sync notes progress to GitHub
+            push_all_new_notes()
             st.warning(
                 "⏸️ **Batch queue paused due to Gemini daily quota limit.**\n\n"
                 "All completed notes and partial video segments are safely stored in your database. "
@@ -312,7 +332,7 @@ with tab_batch:
             )
         else:
             # Sync full batch completion to GitHub
-            push_db_to_github()
+            push_all_new_notes()
             batch_status.update(label="🎉 Batch processing finished!", state="complete")
             st.success("All queued lectures have been successfully processed!")
             st.rerun()

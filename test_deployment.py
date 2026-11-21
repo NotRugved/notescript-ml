@@ -218,6 +218,18 @@ report("get_github_repo configured", bool(repo_slug and "/" in repo_slug), repo_
 remote_sha = github_sync.get_remote_file_sha("README.md")
 report("get_remote_file_sha reads remote repository file", bool(remote_sha and len(remote_sha) == 40), f"sha: {remote_sha[:10]}…")
 
+# ── 10. GENERATED NOTES SHARED STORAGE ────────────────────────────────────────
+print("\n── 10. Generated notes shared storage ──")
+
+report("generated_notes folder exists", os.path.isdir("generated_notes"))
+report("generated_notes/.gitkeep exists", os.path.exists("generated_notes/.gitkeep"))
+notes_folders = [d for d in os.listdir("generated_notes") if os.path.isdir(os.path.join("generated_notes", d))]
+report("generated_notes has lecture folders", len(notes_folders) > 0, f"{len(notes_folders)} lectures")
+
+# Test hydration into clean database
+hydrated_cnt, hyd_errs = github_sync.hydrate_from_generated_notes(TEST_DB)
+report("hydrate_from_generated_notes succeeds", hydrated_cnt > 0 and len(hyd_errs) == 0, f"hydrated {hydrated_cnt} lectures")
+
 # ── CLEANUP & SUMMARY ─────────────────────────────────────────────────────────
 if os.path.exists(TEST_DB):
     os.remove(TEST_DB)
